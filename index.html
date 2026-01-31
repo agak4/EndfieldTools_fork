@@ -14,17 +14,35 @@
 <body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
     <div class="max-w-5xl mx-auto">
         <h1 class="text-3xl font-bold mb-8 text-center text-blue-400">⚔️ 엔드필드 무기 데이터베이스</h1>
-        
-        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
-            <label class="block mb-4 font-semibold text-gray-300">🔍 기질 속성 필터</label>
-            <div id="tag-container" class="flex flex-wrap gap-2 mb-4"></div>
-            <button onclick="resetFilters()" class="text-sm text-gray-500 hover:text-white underline">필터 초기화</button>
-        </div>
 
-        <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-700 rounded-t-xl font-bold text-gray-200">
+        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <label class="font-semibold text-gray-300">🔍 기질 필터</label>
+                <button onclick="resetFilters()" class="text-sm text-gray-500 hover:text-white underline">전체 초기화</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-widest border-b border-gray-700 pb-1">능력치</h3>
+                    <div id="tags-stats" class="flex flex-wrap gap-2"></div>
+                </div>
+                
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold text-green-400 uppercase tracking-widest border-b border-gray-700 pb-1">속성</h3>
+                    <div id="tags-attrs" class="flex flex-wrap gap-2"></div>
+                </div>
+                
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold text-purple-400 uppercase tracking-widest border-b border-gray-700 pb-1">시리즈 스킬</h3>
+                    <div id="tags-series" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-700 rounded-t-xl font-black text-gray-200 text-base">
             <div class="col-span-5 md:col-span-4">무기 이름</div>
-            <div class="hidden md:block col-span-3 text-center">획득처</div>
-            <div class="col-span-7 md:col-span-5 text-right md:text-left">기질 속성</div>
+            <div class="hidden md:block col-span-3 text-center">추천 캐릭터</div>
+            <div class="col-span-7 md:col-span-5 text-right md:text-left">기질</div>
         </div>
 
         <div id="weapon-list" class="bg-gray-800 rounded-b-xl shadow-2xl divide-y divide-gray-700 border-x border-b border-gray-700">
@@ -48,14 +66,40 @@
             }
         }
 
+        //식각각 카테고리 정의
+        const categories = {
+            stats: ["민첩 증가", "힘 증가", "의지 증가", "지능 증가", "주요 능력치 증가"],
+            attrs: ["공격력 증가", "생명력 증가", "물리 피해 증가", "열기 피해 증가", "전기 피해 증가", "냉기 피해 증가", "자연 피해 증가", "치명타 확률 증가", "오리지늄 아츠 증가", "오리지늄 아츠 강도 증가", "궁극기 획득 효율 증가", "궁극기 충전 효율 증가", "아츠 피해 증가", "치유 효율 증가"],
+            series: ["강공", "억제", "추격", "분쇄", "사기", "기예", "잔혹", "고통", "의료", "골절", "방출", "어둠", "흐름", "효율"]
+        };
+
         function renderTags() {
-            const container = document.getElementById('tag-container');
-            container.innerHTML = allTags.map(tag => `
-                <button onclick="toggleTag('${tag}')" 
-                    class="px-3 py-1.5 rounded-lg border text-xs font-medium transition ${activeTags.has(tag) ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'border-gray-600 text-gray-400 hover:bg-gray-700'}">
-                    ${tag}
-                </button>
-            `).join('');
+            // 각 컨테이너 초기화
+            const containers = {
+                stats: document.getElementById('tags-stats'),
+                attrs: document.getElementById('tags-attrs'),
+                series: document.getElementById('tags-series')
+            };
+            
+            Object.keys(containers).forEach(key => containers[key].innerHTML = '');
+
+            allTags.forEach(tag => {
+                // 태그가 어느 카테고리에 속하는지 확인
+                let category = 'attrs'; // 기본값
+                if (categories.stats.includes(tag)) category = 'stats';
+                else if (categories.series.includes(tag)) category = 'series';
+
+                const btnColor = activeTags.has(tag) ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-600 text-gray-400 hover:bg-gray-700';
+                
+                const btn = `
+                    <button onclick="toggleTag('${tag}')" 
+                        class="px-3 py-1.5 rounded border text-sm font-bold transition ${btnColor}">
+                        ${tag}
+                    </button>
+                `;
+                
+                containers[category].innerHTML += btn;
+            });
         }
 
         function toggleTag(tag) {
@@ -81,14 +125,21 @@
             
             list.innerHTML = filtered.map((w, index) => `
                 <div id="weapon-${index}" class="group border-gray-700">
-                    <div onclick="toggleAccordion(${index})" class="grid grid-cols-12 gap-4 px-6 py-4 cursor-pointer hover:bg-gray-750 items-center">
-                        <div class="col-span-5 md:col-span-4 flex items-center gap-2">
-                            <span class="arrow-icon text-blue-400">▼</span>
-                            <span class="font-bold text-blue-300 group-hover:text-blue-100 transition">${w.name}</span>
+                    <div onclick="toggleAccordion(${index})" class="grid grid-cols-12 gap-4 px-6 py-5 cursor-pointer hover:bg-gray-750 items-center">
+                        <div class="col-span-5 md:col-span-4">
+                            <div class="flex items-center gap-2">
+                                <span class="arrow-icon text-blue-400 text-xs">▼</span>
+                                <span class="text-lg font-black text-blue-300 group-hover:text-blue-100 transition">${w.name}</span>
+                            </div>
+                            <span class="ml-5 text-[10px] px-1.5 py-0.5 bg-gray-700 text-gray-400 rounded font-bold">${w.source}</span>
                         </div>
-                        <div class="hidden md:block col-span-3 text-center text-sm text-gray-400">${w.source}</div>
+                        
+                        <div class="hidden md:block col-span-3 text-center text-base font-bold text-gray-200">
+                            ${w.recommend || '-'}
+                        </div>
+
                         <div class="col-span-7 md:col-span-5 flex flex-wrap justify-end md:justify-start gap-1">
-                            ${w.tags.map(t => `<span class="text-[10px] bg-gray-900 border border-gray-700 px-2 py-0.5 rounded text-gray-400">${t}</span>`).join('')}
+                            ${w.tags.map(t => `<span class="text-xs bg-gray-900 border border-gray-700 px-2 py-1 rounded text-gray-300 font-bold">${t}</span>`).join('')}
                         </div>
                     </div>
                     
@@ -106,7 +157,7 @@
                             <div class="space-y-4">
                                 <div>
                                     <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Main Stat</h4>
-                                    <p class="text-lg font-semibold text-blue-200">${w.main_stat}</p>
+                                    <p class="text-xl font-black text-blue-200">${w.main_stat}</p>
                                 </div>
                                 <div>
                                     <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Sub Stat</h4>
@@ -116,7 +167,7 @@
 
                             <div>
                                 <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-blue-400">장비 효과</h4>
-                                <div class="text-sm leading-relaxed text-gray-300 whitespace-pre-line">
+                                <div class="text-base font-medium leading-relaxed text-gray-300 whitespace-pre-line">
                                     ${w.effects}
                                 </div>
                             </div>
