@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>엔드필드 무기 데이터베이스</title>
+    <title>식각 계산기</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .details-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
@@ -13,7 +13,7 @@
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
     <div class="max-w-5xl mx-auto">
-        <h1 class="text-3xl font-bold mb-8 text-center text-blue-400">⚔️ 엔드필드 무기 데이터베이스</h1>
+        <h1 class="text-3xl font-bold mb-8 text-center text-blue-400">식각 계산기</h1>
 
         <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
             <div class="flex justify-between items-center mb-4">
@@ -66,7 +66,7 @@
             }
         }
 
-        //식각각 카테고리 정의
+        //식각 카테고리 정의
         const categories = {
             stats: ["민첩 증가", "힘 증가", "의지 증가", "지능 증가", "주요 능력치 증가"],
             attrs: ["공격력 증가", "생명력 증가", "물리 피해 증가", "열기 피해 증가", "전기 피해 증가", "냉기 피해 증가", "자연 피해 증가", "치명타 확률 증가", "오리지늄 아츠 증가", "오리지늄 아츠 강도 증가", "궁극기 획득 효율 증가", "궁극기 충전 효율 증가", "아츠 피해 증가", "치유 효율 증가"],
@@ -74,7 +74,7 @@
         };
 
         function renderTags() {
-            // 각 컨테이너 초기화
+            //식각 컨테이너 초기화
             const containers = {
                 stats: document.getElementById('tags-stats'),
                 attrs: document.getElementById('tags-attrs'),
@@ -121,17 +121,45 @@
 
         function renderWeapons() {
             const list = document.getElementById('weapon-list');
-            const filtered = weapons.filter(w => Array.from(activeTags).every(t => w.tags.includes(t)));
             
+            // 1. 희귀도(rarity) 기준 내림차순 정렬 (6성 -> 3성)
+            // 원본 데이터 보존을 위해 spread 연산자(...)를 사용해 복사본을 정렬합니다.
+            const sortedWeapons = [...weapons].sort((a, b) => (b.rarity || 0) - (a.rarity || 0));
+
+            // 2. 활성화된 태그 필터링 적용
+            const filtered = sortedWeapons.filter(w => 
+                Array.from(activeTags).every(t => w.tags.includes(t))
+            );
+
+            // 희귀도별 텍스트 색상 정의
+            const rarityColor = {
+                6: 'text-orange-400', // 전설
+                5: 'text-yellow-200', // 에픽
+                4: 'text-purple-300', // 희귀
+                3: 'text-blue-200'    // 일반
+            };
+
             list.innerHTML = filtered.map((w, index) => `
                 <div id="weapon-${index}" class="group border-gray-700">
                     <div onclick="toggleAccordion(${index})" class="grid grid-cols-12 gap-4 px-6 py-5 cursor-pointer hover:bg-gray-750 items-center">
                         <div class="col-span-5 md:col-span-4">
                             <div class="flex items-center gap-2">
                                 <span class="arrow-icon text-blue-400 text-xs">▼</span>
-                                <span class="text-lg font-black text-blue-300 group-hover:text-blue-100 transition">${w.name}</span>
+                                <span class="text-lg font-black ${rarityColor[w.rarity] || 'text-blue-300'} transition">${w.name}</span>
                             </div>
-                            <span class="ml-5 text-[10px] px-1.5 py-0.5 bg-gray-700 text-gray-400 rounded font-bold">${w.source}</span>
+                            <div class="flex items-center gap-1.5 mt-1 ml-5">
+                                <span class="text-[11px] px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded font-bold">
+                                    ${w.type}
+                                </span>
+                                <span class="text-[11px] font-black px-1.5 py-0.5 rounded border ${
+                                    w.rarity == 6 ? 'text-orange-400 border-orange-400/50 bg-orange-400/10 shadow-[0_0_8px_rgba(251,146,60,0.2)]' :
+                                    w.rarity == 5 ? 'text-yellow-200 border-yellow-200/50 bg-yellow-200/10' :
+                                    w.rarity == 4 ? 'text-purple-300 border-purple-300/50 bg-purple-300/10' :
+                                    'text-blue-200 border-blue-200/50 bg-blue-200/10'
+                                }">
+                                    ★ ${w.rarity}
+                                </span>
+                            </div>
                         </div>
                         
                         <div class="hidden md:block col-span-3 text-center text-base font-bold text-gray-200">
