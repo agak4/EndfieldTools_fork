@@ -2,51 +2,49 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>엔드필드 무기 검색기</title>
+    <title>엔드필드 무기 데이터베이스</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .details-open .details-content { max-height: 500px; transition: max-height 0.5s ease-in; }
+        .arrow-icon { transition: transform 0.3s; }
+        .details-open .arrow-icon { transform: rotate(180deg); }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-8">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-8 text-center text-blue-400">⚔️ 엔드필드 무기 DB (JSON 연동)</h1>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center text-blue-400">⚔️ 엔드필드 무기 데이터베이스</h1>
         
-        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
-            <label class="block mb-2 font-semibold">🔍 기질 속성 필터</label>
+        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
+            <label class="block mb-4 font-semibold text-gray-300">🔍 기질 속성 필터</label>
             <div id="tag-container" class="flex flex-wrap gap-2 mb-4"></div>
-            <button onclick="resetFilters()" class="text-sm text-gray-400 hover:text-white underline">초기화</button>
+            <button onclick="resetFilters()" class="text-sm text-gray-500 hover:text-white underline">필터 초기화</button>
         </div>
 
-        <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-gray-700">
-                    <tr>
-                        <th class="p-4">무기 이름</th>
-                        <th class="p-4">획득처</th>
-                        <th class="p-4">기질 속성</th>
-                    </tr>
-                </thead>
-                <tbody id="weapon-list"></tbody>
-            </table>
+        <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-700 rounded-t-xl font-bold text-gray-200">
+            <div class="col-span-5 md:col-span-4">무기 이름</div>
+            <div class="hidden md:block col-span-3 text-center">획득처</div>
+            <div class="col-span-7 md:col-span-5 text-right md:text-left">기질 속성</div>
         </div>
+
+        <div id="weapon-list" class="bg-gray-800 rounded-b-xl shadow-2xl divide-y divide-gray-700 border-x border-b border-gray-700">
+            </div>
     </div>
 
     <script>
-        let weapons = []; // JSON 데이터를 담을 배열
+        let weapons = [];
         let allTags = [];
         let activeTags = new Set();
 
-        // [핵심] JSON 파일 불러오기
         async function loadData() {
             try {
-                const response = await fetch('data.json'); // 같은 경로의 data.json 호출
+                const response = await fetch('data.json');
                 weapons = await response.json();
-                
-                // 태그 추출 및 초기 렌더링
                 allTags = [...new Set(weapons.flatMap(w => w.tags))].sort();
                 renderTags();
                 renderWeapons();
             } catch (error) {
-                console.error("데이터 로드 실패:", error);
-                document.getElementById('weapon-list').innerHTML = `<tr><td colspan="3" class="p-8 text-center text-red-400">data.json 파일을 찾을 수 없습니다.</td></tr>`;
+                console.error("Data load error:", error);
             }
         }
 
@@ -54,8 +52,8 @@
             const container = document.getElementById('tag-container');
             container.innerHTML = allTags.map(tag => `
                 <button onclick="toggleTag('${tag}')" 
-                    class="px-3 py-1 rounded-full border text-sm transition ${activeTags.has(tag) ? 'bg-blue-600 border-blue-600' : 'border-gray-600 text-gray-400 hover:bg-gray-700'}">
-                    #${tag}
+                    class="px-3 py-1.5 rounded-lg border text-xs font-medium transition ${activeTags.has(tag) ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'border-gray-600 text-gray-400 hover:bg-gray-700'}">
+                    ${tag}
                 </button>
             `).join('');
         }
@@ -72,22 +70,62 @@
             renderWeapons();
         }
 
+        function toggleAccordion(id) {
+            const element = document.getElementById(`weapon-${id}`);
+            element.classList.toggle('details-open');
+        }
+
         function renderWeapons() {
             const list = document.getElementById('weapon-list');
             const filtered = weapons.filter(w => Array.from(activeTags).every(t => w.tags.includes(t)));
             
-            list.innerHTML = filtered.map(w => `
-                <tr class="border-b border-gray-700 hover:bg-gray-750">
-                    <td class="p-4 font-bold text-blue-300">${w.name}</td>
-                    <td class="p-4 text-sm text-gray-400">${w.source}</td>
-                    <td class="p-4 flex flex-wrap gap-1">
-                        ${w.tags.map(t => `<span class="text-xs bg-gray-900 px-2 py-0.5 rounded text-gray-300">#${t}</span>`).join('')}
-                    </td>
-                </tr>
+            list.innerHTML = filtered.map((w, index) => `
+                <div id="weapon-${index}" class="group border-gray-700">
+                    <div onclick="toggleAccordion(${index})" class="grid grid-cols-12 gap-4 px-6 py-4 cursor-pointer hover:bg-gray-750 items-center">
+                        <div class="col-span-5 md:col-span-4 flex items-center gap-2">
+                            <span class="arrow-icon text-blue-400">▼</span>
+                            <span class="font-bold text-blue-300 group-hover:text-blue-100 transition">${w.name}</span>
+                        </div>
+                        <div class="hidden md:block col-span-3 text-center text-sm text-gray-400">${w.source}</div>
+                        <div class="col-span-7 md:col-span-5 flex flex-wrap justify-end md:justify-start gap-1">
+                            ${w.tags.map(t => `<span class="text-[10px] bg-gray-900 border border-gray-700 px-2 py-0.5 rounded text-gray-400">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="details-content bg-gray-900/50 px-6">
+                        <div class="py-6 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-gray-800">
+                            <div class="flex items-center justify-center bg-gray-800 rounded-lg p-4 border border-gray-700 min-h-[150px]">
+                                <span class="text-4xl">⚔️</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Main Stat</h4>
+                                    <p class="text-lg font-semibold text-blue-200">${w.main_stat}</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Sub Stat</h4>
+                                    <p class="text-lg font-semibold text-green-400">${w.sub_stat}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-blue-400">장비 효과</h4>
+                                <div class="text-sm leading-relaxed text-gray-300 whitespace-pre-line">
+                                    ${w.effects}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             `).join('');
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="p-12 text-center text-gray-500">조건에 맞는 결과가 없습니다.</div>`;
+            }
         }
 
-        loadData(); // 페이지 시작 시 데이터 로드 실행
+        loadData();
     </script>
 </body>
 </html>
