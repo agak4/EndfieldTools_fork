@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>엔드필드 무기 검색기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center text-blue-400">⚔️ 엔드필드 무기 DB (JSON 연동)</h1>
+        
+        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+            <label class="block mb-2 font-semibold">🔍 기질 속성 필터</label>
+            <div id="tag-container" class="flex flex-wrap gap-2 mb-4"></div>
+            <button onclick="resetFilters()" class="text-sm text-gray-400 hover:text-white underline">초기화</button>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th class="p-4">무기 이름</th>
+                        <th class="p-4">획득처</th>
+                        <th class="p-4">기질 속성</th>
+                    </tr>
+                </thead>
+                <tbody id="weapon-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let weapons = []; // JSON 데이터를 담을 배열
+        let allTags = [];
+        let activeTags = new Set();
+
+        // [핵심] JSON 파일 불러오기
+        async function loadData() {
+            try {
+                const response = await fetch('data.json'); // 같은 경로의 data.json 호출
+                weapons = await response.json();
+                
+                // 태그 추출 및 초기 렌더링
+                allTags = [...new Set(weapons.flatMap(w => w.tags))].sort();
+                renderTags();
+                renderWeapons();
+            } catch (error) {
+                console.error("데이터 로드 실패:", error);
+                document.getElementById('weapon-list').innerHTML = `<tr><td colspan="3" class="p-8 text-center text-red-400">data.json 파일을 찾을 수 없습니다.</td></tr>`;
+            }
+        }
+
+        function renderTags() {
+            const container = document.getElementById('tag-container');
+            container.innerHTML = allTags.map(tag => `
+                <button onclick="toggleTag('${tag}')" 
+                    class="px-3 py-1 rounded-full border text-sm transition ${activeTags.has(tag) ? 'bg-blue-600 border-blue-600' : 'border-gray-600 text-gray-400 hover:bg-gray-700'}">
+                    #${tag}
+                </button>
+            `).join('');
+        }
+
+        function toggleTag(tag) {
+            activeTags.has(tag) ? activeTags.delete(tag) : activeTags.add(tag);
+            renderTags();
+            renderWeapons();
+        }
+
+        function resetFilters() {
+            activeTags.clear();
+            renderTags();
+            renderWeapons();
+        }
+
+        function renderWeapons() {
+            const list = document.getElementById('weapon-list');
+            const filtered = weapons.filter(w => Array.from(activeTags).every(t => w.tags.includes(t)));
+            
+            list.innerHTML = filtered.map(w => `
+                <tr class="border-b border-gray-700 hover:bg-gray-750">
+                    <td class="p-4 font-bold text-blue-300">${w.name}</td>
+                    <td class="p-4 text-sm text-gray-400">${w.source}</td>
+                    <td class="p-4 flex flex-wrap gap-1">
+                        ${w.tags.map(t => `<span class="text-xs bg-gray-900 px-2 py-0.5 rounded text-gray-300">#${t}</span>`).join('')}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        loadData(); // 페이지 시작 시 데이터 로드 실행
+    </script>
+</body>
+</html>
