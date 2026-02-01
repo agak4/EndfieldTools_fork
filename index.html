@@ -196,48 +196,53 @@
             }
         }
 
+        // [최종 로직 : 보유 제외 -> 1,2개는 무조건 보류 -> 3개는 확정]
         function updateDecisionBox(filteredWeapons) {
             const box = document.getElementById('decision-box');
             
-            // [수정됨] 초기 안내 문구 폰트: 모바일 text-xl / PC text-3xl
+            // 초기 상태
             if (activeTags.size === 0 && searchQuery === "") { 
                 renderBox(box, '필터에서 옵션을 선택해주세요', '', 'bg-slate-800/90 border-dashed border-slate-600', 'text-xl md:text-3xl');
                 return;
             }
 
-            if (filteredWeapons.length === 0) {
-                renderBox(box, '갈아', '필요없음', 'bg-slate-700');
+            // [1단계] 보유 무기 제외한 후보군 선정
+            // (전체 필터링 결과 중에서, 내가 아직 안 가진 무기들만 진짜 후보)
+            const candidates = filteredWeapons.filter(w => !ownedWeapons.has(w.name));
+
+            // [2단계] 후보군 중에서 목표 등급 이상인 '유효 무기'가 있는지 확인
+            const validCandidates = candidates.filter(w => (w.rarity || 0) >= targetRarity);
+
+            // ----------------------------------------------------
+            // CASE 1: 옵션 3개 모두 선택 시 (확정 판단)
+            // ----------------------------------------------------
+            if (activeTags.size === 3) {
+                if (validCandidates.length > 0) {
+                    // 3개 다 맞췄고, 내가 없는 유효 무기가 존재함 -> 킵
+                    const bgClass = targetRarity === 6 ? 'bg-red-600 animate-pulse border-red-400' : 'bg-yellow-600 border-yellow-400';
+                    renderBox(box, '갈지마', '킵하고 잠금ㄱ', bgClass);
+                } else {
+                    // 유효 무기가 없음 (또는 다 가짐) -> 필요없음
+                    renderBox(box, '갈아', '필요없음', 'bg-slate-700');
+                }
                 return;
             }
 
-            const maxRarityInPool = Math.max(...filteredWeapons.map(w => w.rarity || 0));
-            const minRarityInPool = Math.min(...filteredWeapons.map(w => w.rarity || 0));
-
-            if (minRarityInPool >= targetRarity) {
-                const bgClass = targetRarity === 6 ? 'bg-red-600 animate-pulse border-red-400' : 'bg-yellow-600 border-yellow-400';
-                renderBox(box, '갈지마', '킵하고 잠금ㄱ', bgClass);
-                return;
-            }
-
-            if (activeTags.size >= 3 && maxRarityInPool >= targetRarity) {
-                const bgClass = targetRarity === 6 ? 'bg-red-600 animate-pulse border-red-400' : 'bg-yellow-600 border-yellow-400';
-                renderBox(box, '갈지마', '킵하고 잠금ㄱ', bgClass);
-                return;
-            }
-
-            const unownedWeapons = filteredWeapons.filter(w => !ownedWeapons.has(w.name));
-            const maxRarityUnowned = unownedWeapons.length > 0 ? Math.max(...unownedWeapons.map(w => w.rarity || 0)) : 0;
-
-            if (maxRarityUnowned >= targetRarity) {
+            // ----------------------------------------------------
+            // CASE 2: 옵션 1~2개 선택 시 (탐색 판단)
+            // ----------------------------------------------------
+            // 아직 옵션을 다 안 깠으므로, 유효 무기가 있어도 3번째 옵션이 꽝일 수 있음.
+            
+            if (validCandidates.length > 0) {
+                // 유효 무기 후보가 살아있음 -> 3번째 옵션 확인 필요 -> 판단 보류
                 renderBox(box, '옵션 더 선택', '아직 판단 못함', 'bg-blue-600');
             } else {
+                // 유효 무기 후보가 전멸함 -> 남은 옵션 볼 것도 없이 꽝
                 renderBox(box, '갈아', '필요없음', 'bg-slate-700');
             }
         }
 
-        // [수정됨] 박스 높이: h-32(모바일) / h-52(PC)
         function renderBox(element, title, desc, bgClass, titleSize) {
-            // 기본 폰트 사이즈: 모바일 4xl / PC 6xl
             const sizeClass = titleSize || "text-4xl md:text-6xl";
             
             element.innerHTML = `
