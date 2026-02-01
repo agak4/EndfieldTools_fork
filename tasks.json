@@ -85,7 +85,7 @@
     "type": "daily",
     "access": "F8 - 가이드북",
     "title": "성장 가이드",
-    "desc": "필요한 성장재화 프로토콜 이성 소모",
+    "desc": "필요한 재화에 이성 태우기",
     "tags": ["성장재화"],
     "default_order": 10
   },

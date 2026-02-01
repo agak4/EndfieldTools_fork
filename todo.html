@@ -13,11 +13,9 @@
         .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .sticky-panel { background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
         
-        /* 체크박스 커스텀 */
         .task-checkbox:checked + div { background-color: #10b981; border-color: #10b981; }
         .task-checkbox:checked + div svg { display: block; }
         
-        /* 완료 상태 */
         .task-item.completed .glass-panel { background: rgba(15, 23, 42, 0.6); }
         .task-item.completed .task-content { opacity: 0.5; text-decoration: line-through; color: #94a3b8; }
         
@@ -25,15 +23,30 @@
         .drag-handle { cursor: grab; touch-action: none; }
         .drag-handle:active { cursor: grabbing; color: #34d399; }
         
-        /* DnD 스타일 */
         .sortable-ghost { opacity: 0.3; background: #334155; border-radius: 1rem; }
         .sortable-fallback { opacity: 1 !important; transform: scale(1.02); z-index: 9999; pointer-events: none; }
         .sortable-fallback .glass-panel { background: #1e293b; border-color: #10b981; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5); }
 
         .progress-bar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* [수정됨] 쓰레기통 스타일: 평소엔 터치 불가(none) -> 활성화 시 터치 가능(auto) */
+        #trash-zone {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none; /* 평소에는 클릭 통과 (버그 수정 핵심) */
+            /* 은은한 붉은 빛 그라데이션 */
+            background: linear-gradient(to right, rgba(220, 38, 38, 0.5) 0%, rgba(220, 38, 38, 0.05) 70%, transparent 100%);
+        }
+        #trash-zone.active {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto; /* 활성화 되면 드랍 가능하게 변경 */
+        }
+        #trash-zone .sortable-ghost { display: none; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black selection:bg-blue-500 selection:text-white relative text-base">
+<body class="bg-slate-950 text-slate-100 min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black selection:bg-blue-500 selection:text-white relative text-base overflow-x-hidden">
     
     <nav class="flex justify-center gap-2 p-3 bg-slate-900/90 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
         <a href="index.html" class="px-5 py-2.5 rounded-xl text-sm md:text-base font-bold transition-all bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white">
@@ -63,9 +76,14 @@
                 </div>
                 
                 <div class="flex flex-wrap justify-between items-center border-t border-white/10 pt-3 gap-2">
-                    <button id="btn-toggle-completed" onclick="taskManager.toggleHideCompleted()" class="px-3 py-2 rounded-lg bg-emerald-900/30 text-xs md:text-sm font-bold text-emerald-400 border border-emerald-700/50 hover:bg-emerald-800/50 transition-colors flex items-center gap-1.5">
-                        <span>👁️</span> <span id="text-toggle-completed">완료 숨기기</span>
-                    </button>
+                    <div class="flex gap-2">
+                        <button id="btn-toggle-completed" onclick="taskManager.toggleHideCompleted()" class="px-3 py-2 rounded-lg bg-emerald-900/30 text-xs md:text-sm font-bold text-emerald-400 border border-emerald-700/50 hover:bg-emerald-800/50 transition-colors flex items-center gap-1.5">
+                            <span>👁️</span> <span id="text-toggle-completed">완료 숨기기</span>
+                        </button>
+                        <button onclick="taskManager.openHiddenManager()" class="px-3 py-2 rounded-lg bg-slate-800 text-xs md:text-sm font-bold text-slate-400 border border-slate-600 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-1.5">
+                            ⚙️ 제외 관리
+                        </button>
+                    </div>
 
                     <div class="flex gap-2 ml-auto">
                         <button onclick="taskManager.resetOrder()" class="px-3 py-2 rounded-lg bg-slate-800 text-xs md:text-sm font-bold text-slate-300 border border-slate-600 hover:bg-slate-700 hover:text-white transition-colors">
@@ -90,6 +108,25 @@
         <p class="text-center text-[10px] text-slate-600 pb-8" id="last-reset-time">동기화 중...</p>
     </div>
 
+    <div id="trash-zone" class="fixed left-0 top-0 bottom-0 w-32 z-[100] flex flex-col justify-center items-start pl-6">
+        <div class="text-5xl animate-pulse drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]">🗑️</div>
+        <span class="text-red-200 font-bold text-sm mt-2 leading-tight drop-shadow-md">여기에<br>버리기</span>
+    </div>
+
+    <div id="hidden-modal-backdrop" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] hidden flex items-center justify-center p-4 transition-opacity duration-200" onclick="taskManager.closeHiddenManager()">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center p-5 border-b border-slate-800 bg-slate-800/50 rounded-t-3xl">
+                <h2 class="text-lg md:text-xl font-bold text-white">제외된 항목 관리</h2>
+                <button onclick="taskManager.closeHiddenManager()" class="text-slate-400 text-2xl leading-none hover:text-white">&times;</button>
+            </div>
+            <div id="hidden-list" class="overflow-y-auto p-5 space-y-3">
+                </div>
+            <div class="p-5 border-t border-slate-800 bg-slate-900 rounded-b-3xl">
+                <button onclick="taskManager.closeHiddenManager()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         class TaskManager {
             constructor() {
@@ -98,10 +135,11 @@
                 this.tasks = []; 
                 this.currentTab = 'daily';
                 this.sortable = null;
+                this.trashSortable = null; 
                 this.state = this.loadState();
-                if (typeof this.state.hideCompleted === 'undefined') {
-                    this.state.hideCompleted = false;
-                }
+                
+                if (typeof this.state.hideCompleted === 'undefined') this.state.hideCompleted = false;
+                if (typeof this.state.hiddenTasks === 'undefined') this.state.hiddenTasks = {}; 
                 
                 this.init();
             }
@@ -110,6 +148,7 @@
                 await this.loadData();
                 this.checkReset();
                 this.render();
+                this.initTrashZone(); 
             }
 
             async loadData() {
@@ -118,7 +157,7 @@
                     this.tasks = await response.json();
                 } catch (error) {
                     console.error("데이터 로드 실패:", error);
-                    document.getElementById('task-list').innerHTML = `<div class="text-center p-10 text-slate-500">데이터를 불러오는데 실패했습니다.</div>`;
+                    document.getElementById('task-list').innerHTML = `<div class="text-center p-10 text-slate-500">데이터 로드 실패</div>`;
                 }
             }
 
@@ -128,7 +167,8 @@
                     lastLogin: Date.now(), 
                     completed: {},
                     order: { daily: [], weekly: [] },
-                    hideCompleted: false 
+                    hideCompleted: false,
+                    hiddenTasks: {} 
                 };
             }
 
@@ -170,14 +210,47 @@
                 this.saveState();
             }
 
+            hideTask(id) {
+                this.state.hiddenTasks[id] = true;
+                this.saveState();
+            }
+
+            restoreTask(id) {
+                delete this.state.hiddenTasks[id];
+                this.saveState();
+                this.openHiddenManager(); 
+            }
+
+            openHiddenManager() {
+                const modal = document.getElementById('hidden-modal-backdrop');
+                const list = document.getElementById('hidden-list');
+                const hiddenItems = this.tasks.filter(t => this.state.hiddenTasks[t.id]);
+
+                if (hiddenItems.length === 0) {
+                    list.innerHTML = `<div class="text-center text-slate-500 py-8 text-sm">제외된 항목이 없습니다.</div>`;
+                } else {
+                    list.innerHTML = hiddenItems.map(task => `
+                        <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
+                            <span class="text-slate-200 font-bold text-sm truncate mr-4">${task.title}</span>
+                            <button onclick="taskManager.restoreTask('${task.id}')" class="text-xs font-bold text-emerald-400 border border-emerald-500/30 bg-emerald-900/20 px-3 py-1.5 rounded-lg hover:bg-emerald-900/50 whitespace-nowrap">복구</button>
+                        </div>
+                    `).join('');
+                }
+                modal.classList.remove('hidden');
+            }
+
+            closeHiddenManager() {
+                document.getElementById('hidden-modal-backdrop').classList.add('hidden');
+            }
+
             forceReset() {
-                if(!confirm('오늘의 완료 내역을 초기화하시겠습니까?')) return;
+                if(!confirm('완료 내역을 초기화하시겠습니까?')) return;
                 this.state.completed = {};
                 this.saveState();
             }
 
             resetOrder() {
-                if(!confirm('순서를 기본값으로 되돌리겠습니까?')) return;
+                if(!confirm('순서를 되돌리겠습니까?')) return;
                 this.state.order[this.currentTab] = [];
                 this.saveState();
             }
@@ -188,11 +261,31 @@
                 this.render();
             }
 
+            initTrashZone() {
+                const trashEl = document.getElementById('trash-zone');
+                
+                this.trashSortable = new Sortable(trashEl, {
+                    group: 'tasks',
+                    animation: 150,
+                    ghostClass: 'hidden',
+                    onAdd: (evt) => {
+                        // [버그 수정] 드롭 즉시 닫기
+                        document.getElementById('trash-zone').classList.remove('active');
+                        
+                        const id = evt.item.dataset.id;
+                        this.hideTask(id);
+                        evt.item.remove();
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    }
+                });
+            }
+
             initSortable() {
                 const el = document.getElementById('task-list');
                 if (this.sortable) this.sortable.destroy();
 
                 this.sortable = new Sortable(el, {
+                    group: 'tasks',
                     handle: '.drag-handle',
                     animation: 200,
                     ghostClass: 'sortable-ghost',
@@ -202,7 +295,12 @@
                     scrollSpeed: 20,       
                     forceFallback: true,    
                     fallbackClass: 'sortable-fallback', 
+                    
+                    onStart: () => {
+                        document.getElementById('trash-zone').classList.add('active');
+                    },
                     onEnd: () => {
+                        document.getElementById('trash-zone').classList.remove('active');
                         this.saveCurrentOrder();
                         this.render(); 
                     }
@@ -217,6 +315,20 @@
                 if (!this.state.order) this.state.order = { daily: [], weekly: [] };
                 this.state.order[this.currentTab] = newOrder; 
                 this.saveStateSilent();
+            }
+
+            toggleDetail(event, id) {
+                const card = event.currentTarget.closest('.task-item');
+                const desc = card.querySelector('.task-desc');
+                const tags = card.querySelector('.task-tags');
+                
+                if (desc.classList.contains('line-clamp-1')) {
+                    desc.classList.remove('line-clamp-1');
+                    tags.classList.remove('hidden'); 
+                } else {
+                    desc.classList.add('line-clamp-1');
+                    tags.classList.add('hidden'); 
+                }
             }
 
             render() {
@@ -257,6 +369,8 @@
                 let visibleCount = 0;
 
                 currentTasks.forEach((task, index) => {
+                    if (this.state.hiddenTasks && this.state.hiddenTasks[task.id]) return;
+
                     const isDone = this.state.completed[task.id] || false;
                     if (this.state.hideCompleted && isDone) return;
                     visibleCount++;
@@ -278,7 +392,6 @@
                         `<span class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-800 border border-slate-700 px-1.5 py-0.5 md:px-2 md:py-1 rounded">${tag}</span>`
                     ).join('');
 
-                    // [변경] 카드를 누르면 toggleTask 실행
                     const itemHtml = `
                         <div class="task-item group relative pl-2 md:pl-4 py-2 ${isDone ? 'completed' : ''}" data-id="${task.id}">
                             
@@ -291,7 +404,7 @@
                                     </div>
                                 </div>
 
-                                <div class="flex-1 min-w-0 task-content">
+                                <div class="flex-1 min-w-0 task-content" onclick="taskManager.toggleDetail(event, '${task.id}'); event.stopPropagation();">
                                     <div class="flex items-center justify-between mb-0.5 md:mb-1.5">
                                         <h3 class="task-title text-base md:text-xl font-bold text-white truncate pr-2">${task.title}</h3>
                                     </div>
@@ -308,12 +421,12 @@
                     listEl.insertAdjacentHTML('beforeend', itemHtml);
                 });
 
-                if (visibleCount === 0 && this.state.hideCompleted) {
+                if (visibleCount === 0) {
                     listEl.innerHTML = `
                         <div class="text-center py-20">
                             <p class="text-4xl mb-4">🎉</p>
-                            <p class="text-base md:text-xl font-bold text-white">모든 업무 완료!</p>
-                            <button onclick="taskManager.toggleHideCompleted()" class="mt-4 text-slate-400 underline text-xs md:text-sm">완료 항목 보기</button>
+                            <p class="text-base md:text-xl font-bold text-white">표시할 미션이 없습니다!</p>
+                            <button onclick="taskManager.toggleHideCompleted()" class="mt-4 text-slate-400 underline text-xs md:text-sm">완료 항목 확인하기</button>
                         </div>
                     `;
                 }
@@ -325,9 +438,10 @@
             }
 
             updateProgress() {
-                const currentTasks = this.tasks.filter(t => t.type === this.currentTab);
+                const currentTasks = this.tasks.filter(t => t.type === this.currentTab && !this.state.hiddenTasks[t.id]);
                 let doneCount = 0;
                 currentTasks.forEach(t => { if (this.state.completed[t.id]) doneCount++; });
+                
                 const percentage = currentTasks.length === 0 ? 0 : Math.round((doneCount / currentTasks.length) * 100);
                 document.getElementById('progress-text').innerText = percentage;
                 document.getElementById('progress-bar').style.width = `${percentage}%`;
