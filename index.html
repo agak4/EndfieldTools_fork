@@ -199,8 +199,9 @@
         function updateDecisionBox(filteredWeapons) {
             const box = document.getElementById('decision-box');
             
+            // [수정됨] 초기 안내 문구 폰트: 모바일 text-xl / PC text-3xl
             if (activeTags.size === 0 && searchQuery === "") { 
-                renderBox(box, '필터에서 옵션을 선택해주세요', '', 'bg-slate-800/90 border-dashed border-slate-600', 'text-2xl md:text-3xl');
+                renderBox(box, '필터에서 옵션을 선택해주세요', '', 'bg-slate-800/90 border-dashed border-slate-600', 'text-xl md:text-3xl');
                 return;
             }
 
@@ -212,21 +213,18 @@
             const maxRarityInPool = Math.max(...filteredWeapons.map(w => w.rarity || 0));
             const minRarityInPool = Math.min(...filteredWeapons.map(w => w.rarity || 0));
 
-            // 1. [확정 득템]
             if (minRarityInPool >= targetRarity) {
                 const bgClass = targetRarity === 6 ? 'bg-red-600 animate-pulse border-red-400' : 'bg-yellow-600 border-yellow-400';
                 renderBox(box, '갈지마', '킵하고 잠금ㄱ', bgClass);
                 return;
             }
 
-            // 2. [3유효 저격]
             if (activeTags.size >= 3 && maxRarityInPool >= targetRarity) {
                 const bgClass = targetRarity === 6 ? 'bg-red-600 animate-pulse border-red-400' : 'bg-yellow-600 border-yellow-400';
                 renderBox(box, '갈지마', '킵하고 잠금ㄱ', bgClass);
                 return;
             }
 
-            // 3. [일반 탐색]
             const unownedWeapons = filteredWeapons.filter(w => !ownedWeapons.has(w.name));
             const maxRarityUnowned = unownedWeapons.length > 0 ? Math.max(...unownedWeapons.map(w => w.rarity || 0)) : 0;
 
@@ -237,14 +235,16 @@
             }
         }
 
+        // [수정됨] 박스 높이: h-32(모바일) / h-52(PC)
         function renderBox(element, title, desc, bgClass, titleSize) {
-            const sizeClass = titleSize || "text-5xl md:text-6xl";
+            // 기본 폰트 사이즈: 모바일 4xl / PC 6xl
+            const sizeClass = titleSize || "text-4xl md:text-6xl";
             
             element.innerHTML = `
-                <div class="${bgClass} rounded-3xl h-52 flex flex-col justify-center items-center p-4 text-center shadow-2xl border-2 border-white/20 animate-pop relative overflow-hidden transition-colors duration-300">
+                <div class="${bgClass} rounded-2xl md:rounded-3xl h-32 md:h-52 flex flex-col justify-center items-center p-3 md:p-4 text-center shadow-2xl border-2 border-white/20 animate-pop relative overflow-hidden transition-colors duration-300">
                     <div class="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
                     <h2 class="${sizeClass} font-black text-white drop-shadow-lg relative z-10 leading-tight">${title}</h2>
-                    <p class="text-lg md:text-xl font-bold text-white/80 relative z-10 mt-2">${desc}</p>
+                    ${desc ? `<p class="text-sm md:text-xl font-bold text-white/80 relative z-10 mt-1 md:mt-2">${desc}</p>` : ''}
                 </div>
             `;
         }
@@ -254,7 +254,6 @@
             const imgPath = w.image ? w.image : `images/${w.name}.png`;
             const isOwned = ownedWeapons.has(w.name);
             
-            // 보유 상태 디자인 (에메랄드빛 배경, 회색조 제거)
             const cardOpacity = isOwned 
                 ? 'bg-emerald-900/10 border-emerald-500/30' 
                 : 'bg-slate-800/40 border-transparent';

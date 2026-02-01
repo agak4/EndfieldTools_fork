@@ -219,23 +219,6 @@
                 this.saveStateSilent();
             }
 
-            // [기능 추가] 카드 내용 펼치기/접기 토글
-            toggleDetail(event, id) {
-                // 체크박스나 핸들을 눌렀을 땐 동작하지 않음
-                const card = event.currentTarget.closest('.task-item');
-                const desc = card.querySelector('.task-desc');
-                const tags = card.querySelector('.task-tags');
-                
-                // line-clamp 클래스 토글
-                if (desc.classList.contains('line-clamp-1')) {
-                    desc.classList.remove('line-clamp-1');
-                    tags.classList.remove('hidden'); // 태그 보이기
-                } else {
-                    desc.classList.add('line-clamp-1');
-                    tags.classList.add('hidden'); // 태그 숨기기
-                }
-            }
-
             render() {
                 if (this.tasks.length === 0) return;
 
@@ -295,23 +278,20 @@
                         `<span class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-800 border border-slate-700 px-1.5 py-0.5 md:px-2 md:py-1 rounded">${tag}</span>`
                     ).join('');
 
-                    // [수정된 카드 HTML]
-                    // 1. 패딩 줄임 (p-3 md:p-5)
-                    // 2. 제목 한줄 처리 (truncate)
-                    // 3. 설명 한줄 처리 (line-clamp-1) + 클릭 시 펼침 이벤트
+                    // [변경] 카드를 누르면 toggleTask 실행
                     const itemHtml = `
                         <div class="task-item group relative pl-2 md:pl-4 py-2 ${isDone ? 'completed' : ''}" data-id="${task.id}">
                             
-                            <div class="glass-panel p-3 md:p-5 rounded-xl md:rounded-2xl flex items-start gap-3 md:gap-5 transition-all duration-200 group-hover:border-emerald-500/30 group-hover:bg-slate-800/60">
+                            <div class="glass-panel p-3 md:p-5 rounded-xl md:rounded-2xl flex items-start gap-3 md:gap-5 transition-all duration-200 group-hover:border-emerald-500/30 group-hover:bg-slate-800/60 cursor-pointer" onclick="taskManager.toggleTask('${task.id}')">
                                 
-                                <div class="relative shrink-0 cursor-pointer pt-1" onclick="taskManager.toggleTask('${task.id}')">
+                                <div class="relative shrink-0 pt-1">
                                     <input type="checkbox" class="task-checkbox appearance-none absolute w-full h-full cursor-pointer z-10" ${isDone ? 'checked' : ''}>
                                     <div class="w-6 h-6 md:w-7 md:h-7 border-2 border-slate-600 rounded-lg flex items-center justify-center transition-all bg-slate-900">
                                         <svg class="w-4 h-4 md:w-5 md:h-5 text-white hidden pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                                     </div>
                                 </div>
 
-                                <div class="flex-1 min-w-0 task-content cursor-pointer" onclick="taskManager.toggleDetail(event, '${task.id}')">
+                                <div class="flex-1 min-w-0 task-content">
                                     <div class="flex items-center justify-between mb-0.5 md:mb-1.5">
                                         <h3 class="task-title text-base md:text-xl font-bold text-white truncate pr-2">${task.title}</h3>
                                     </div>
@@ -319,7 +299,7 @@
                                     <div class="task-tags flex flex-wrap gap-1 md:gap-1.5 opacity-80 hidden md:flex">${tagsHtml}</div>
                                 </div>
 
-                                <div class="drag-handle relative shrink-0 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-slate-600 hover:text-emerald-400 hover:bg-slate-700/50 rounded-xl transition-colors ml-auto self-center">
+                                <div class="drag-handle relative shrink-0 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-slate-600 hover:text-emerald-400 hover:bg-slate-700/50 rounded-xl transition-colors ml-auto self-center" onclick="event.stopPropagation()">
                                     <svg class="w-5 h-5 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                                 </div>
                             </div>
