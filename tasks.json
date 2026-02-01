@@ -1,12 +1,24 @@
 [
     {
+        "id": "d_12",
+        "type": "daily",
+        "access": "웹 이벤트",
+        "title": "일일 출석 체크",
+        "desc": "웹 페이지 출석 체크",
+        "tags": [
+            "성장재화"
+        ],
+        "default_order": 0,
+        "is_default_hidden": false
+    },
+    {
         "id": "d_01",
         "type": "daily",
         "access": "ESC",
         "title": "공업 보고서",
         "desc": "공장 가동 상황 확인",
         "tags": [],
-        "default_order": 999,
+        "default_order": 1,
         "is_default_hidden": true
     },
     {
@@ -18,7 +30,7 @@
         "tags": [
             "관리권"
         ],
-        "default_order": 1,
+        "default_order": 2,
         "is_default_hidden": false
     },
     {
@@ -30,7 +42,7 @@
         "tags": [
             "관리권"
         ],
-        "default_order": 2,
+        "default_order": 3,
         "is_default_hidden": false
     },
     {
@@ -43,7 +55,7 @@
             "관리권",
             "크레딧"
         ],
-        "default_order": 6,
+        "default_order": 4,
         "is_default_hidden": false
     },
     {
@@ -55,7 +67,7 @@
         "tags": [
             "관리권"
         ],
-        "default_order": 999,
+        "default_order": 5,
         "is_default_hidden": true
     },
     {
@@ -68,7 +80,7 @@
             "성장재화",
             "크레딧"
         ],
-        "default_order": 4,
+        "default_order": 6,
         "is_default_hidden": false
     },
     {
@@ -80,7 +92,7 @@
         "tags": [
             "크레딧"
         ],
-        "default_order": 3,
+        "default_order": 7,
         "is_default_hidden": false
     },
     {
@@ -92,7 +104,7 @@
         "tags": [
             "신뢰도"
         ],
-        "default_order": 5,
+        "default_order": 8,
         "is_default_hidden": false
     },
     {
@@ -104,7 +116,7 @@
         "tags": [
             "성장재화"
         ],
-        "default_order": 8,
+        "default_order": 9,
         "is_default_hidden": false
     },
     {
@@ -128,19 +140,7 @@
         "tags": [
             "활약도"
         ],
-        "default_order": 9,
-        "is_default_hidden": false
-    },
-    {
-        "id": "d_12",
-        "type": "daily",
-        "access": "웹 이벤트",
-        "title": "일일 출석 체크",
-        "desc": "웹 페이지 출석 체크",
-        "tags": [
-            "성장재화"
-        ],
-        "default_order": 0,
+        "default_order": 11,
         "is_default_hidden": false
     },
     {
@@ -152,7 +152,7 @@
         "tags": [
             "제강호 재화"
         ],
-        "default_order": 7,
+        "default_order": 12,
         "is_default_hidden": false
     }
 ]
