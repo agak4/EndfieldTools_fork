@@ -130,23 +130,20 @@
                 this.storageKey = 'endfield_tasks_v3'; 
                 this.resetHour = 5; 
                 this.tasks = []; 
-                this.defaultConfig = {}; 
                 this.currentTab = 'daily';
                 this.sortable = null;
                 this.trashSortable = null;
-                this.state = {}; 
+                // state는 init에서 로드
+                this.state = {};
                 
                 this.init();
             }
 
             async init() {
-                // 1. 데이터와 설정 파일을 병렬 로드
-                await Promise.all([this.loadData(), this.loadConfig()]);
-                
-                // 2. 상태 로드
+                await this.loadData();
                 this.state = this.loadState();
                 
-                // 3. 상태값 보정
+                // 상태값 보정
                 if (typeof this.state.hideCompleted === 'undefined') this.state.hideCompleted = false;
                 if (typeof this.state.hiddenTasks === 'undefined') this.state.hiddenTasks = {}; 
 
@@ -157,7 +154,8 @@
 
             async loadData() {
                 try {
-                    const response = await fetch('tasks.json');
+                    // 캐싱 방지
+                    const response = await fetch('tasks.json?t=' + new Date().getTime());
                     this.tasks = await response.json();
                 } catch (error) {
                     console.error("데이터 로드 실패:", error);
@@ -165,43 +163,29 @@
                 }
             }
 
-            // [수정됨] 캐시 방지를 위해 타임스탬프 추가
-            async loadConfig() {
-                try {
-                    // ?t=... 로 매번 새로운 파일 요청 (브라우저 캐시 무시)
-                    const response = await fetch('config.json?t=' + new Date().getTime());
-                    if(response.ok) {
-                        this.defaultConfig = await response.json();
-                    } else {
-                        console.warn("config.json 응답 없음");
-                        this.defaultConfig = { order: { daily: [], weekly: [] }, hiddenTasks: {} };
-                    }
-                } catch (error) {
-                    console.log("config.json 로드 실패. 기본값 사용.");
-                    this.defaultConfig = { order: { daily: [], weekly: [] }, hiddenTasks: {} };
-                }
-            }
-
-            // [수정됨] Deep Copy를 통한 설정값 적용
             loadState() {
                 const saved = localStorage.getItem(this.storageKey);
                 
-                // config.json에서 가져온 기본값 (깊은 복사)
-                // 중요: defaultConfig를 그대로 쓰면 참조 문제가 발생할 수 있으므로 JSON.parse/stringify로 복제
-                const initialConfig = JSON.parse(JSON.stringify(this.defaultConfig));
-                
-                const defaultState = { 
-                    lastLogin: Date.now(), 
-                    completed: {}, 
-                    order: initialConfig.order || { daily: [], weekly: [] },
-                    hiddenTasks: initialConfig.hiddenTasks || {},
-                    hideCompleted: false
-                };
+                // tasks.json을 기반으로 기본 숨김 설정 생성
+                const defaultHidden = {};
+                this.tasks.forEach(t => {
+                    if (t.is_default_hidden) defaultHidden[t.id] = true;
+                });
 
                 if (saved) {
-                    return JSON.parse(saved);
+                    const parsed = JSON.parse(saved);
+                    // 기존 사용자의 경우 hiddenTasks가 비어있다면(초기) default값을 병합해줄 수도 있음
+                    // 하지만 사용자 설정을 우선시하여 그대로 둠.
+                    return parsed;
                 } else {
-                    return defaultState;
+                    // 첫 방문자: tasks.json의 기본값 사용
+                    return { 
+                        lastLogin: Date.now(), 
+                        completed: {}, 
+                        order: { daily: [], weekly: [] }, // 비워두면 render에서 default_order로 정렬됨
+                        hiddenTasks: defaultHidden,
+                        hideCompleted: false
+                    };
                 }
             }
 
@@ -284,8 +268,8 @@
 
             resetOrder() {
                 if(!confirm('순서를 초기 설정으로 되돌리겠습니까?')) return;
-                // config.json의 순서로 복구
-                this.state.order = JSON.parse(JSON.stringify(this.defaultConfig.order || { daily: [], weekly: [] }));
+                // 순서 배열을 비우면 render에서 default_order를 따라감
+                this.state.order[this.currentTab] = [];
                 this.saveState();
             }
 
@@ -371,6 +355,7 @@
                 let currentTasks = this.tasks.filter(t => t.type === this.currentTab);
                 const savedOrder = this.state.order?.[this.currentTab] || [];
                 
+                // [핵심] 순서 정렬: 저장된 순서가 있으면 그걸 쓰고, 없으면 tasks.json의 default_order를 씀
                 if (savedOrder.length > 0) {
                     const orderMap = new Map(savedOrder.map((id, index) => [id, index]));
                     currentTasks.sort((a, b) => {
@@ -379,7 +364,8 @@
                         return indexA - indexB;
                     });
                 } else {
-                    currentTasks.sort((a, b) => (a.default_order || 0) - (b.default_order || 0));
+                    // default_order가 없으면(오래된 파일) 999로 뒤로 밀림
+                    currentTasks.sort((a, b) => (a.default_order || 999) - (b.default_order || 999));
                 }
                 
                 let lastAccess = ""; 
@@ -409,6 +395,7 @@
                         `<span class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-800 border border-slate-700 px-1.5 py-0.5 md:px-2 md:py-1 rounded">${tag}</span>`
                     ).join('');
 
+                    // [복구] 아코디언 제거, 카드 클릭 시 toggleTask
                     const itemHtml = `
                         <div class="task-item group relative pl-2 md:pl-4 py-2 ${isDone ? 'completed' : ''}" data-id="${task.id}">
                             
