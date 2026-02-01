@@ -5,8 +5,9 @@
     <title>기질 계산기</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* 아코디언 애니메이션 */
         .details-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-        .details-open .details-content { max-height: 500px; transition: max-height 0.5s ease-in; }
+        .details-open .details-content { max-height: 800px; transition: max-height 0.5s ease-in; }
         .arrow-icon { transition: transform 0.3s; }
         .details-open .arrow-icon { transform: rotate(180deg); }
     </style>
@@ -26,192 +27,235 @@
                     <h3 class="text-xs font-bold text-blue-400 uppercase tracking-widest border-b border-gray-700 pb-1">능력치</h3>
                     <div id="tags-stats" class="flex flex-wrap gap-2"></div>
                 </div>
-                
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold text-green-400 uppercase tracking-widest border-b border-gray-700 pb-1">속성</h3>
                     <div id="tags-attrs" class="flex flex-wrap gap-2"></div>
                 </div>
-                
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold text-purple-400 uppercase tracking-widest border-b border-gray-700 pb-1">시리즈 스킬</h3>
                     <div id="tags-series" class="flex flex-wrap gap-2"></div>
                 </div>
             </div>
         </div>
-        
+
+        <div id="decision-box" class="mb-6 p-6 rounded-xl border-2 transition-all duration-300 flex flex-col items-center justify-center text-center shadow-inner hidden">
+            </div>
+
         <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-700 rounded-t-xl font-black text-gray-200 text-base">
             <div class="col-span-5 md:col-span-4">무기 이름</div>
             <div class="hidden md:block col-span-3 text-center">추천 캐릭터</div>
             <div class="col-span-7 md:col-span-5 text-right md:text-left">기질</div>
         </div>
-
+        
         <div id="weapon-list" class="bg-gray-800 rounded-b-xl shadow-2xl divide-y divide-gray-700 border-x border-b border-gray-700">
             </div>
     </div>
 
     <script>
+        // --- 전역 변수 ---
         let weapons = [];
         let allTags = [];
         let activeTags = new Set();
 
+        // --- 초기화 및 데이터 로드 ---
         async function loadData() {
             try {
                 const response = await fetch('data.json');
                 weapons = await response.json();
                 allTags = [...new Set(weapons.flatMap(w => w.tags))].sort();
                 renderTags();
-                renderWeapons();
+                updateUI();
             } catch (error) {
                 console.error("Data load error:", error);
+                document.getElementById('weapon-list').innerHTML = `<div class="p-12 text-center text-red-400">데이터를 불러오는데 실패했습니다.</div>`;
             }
         }
 
-        //식각 카테고리 정의
-        const categories = {
+        // --- 설정 데이터 ---
+        const CATEGORIES = {
             stats: ["민첩 증가", "힘 증가", "의지 증가", "지능 증가", "주요 능력치 증가"],
-            attrs: ["공격력 증가", "생명력 증가", "물리 피해 증가", "열기 피해 증가", "전기 피해 증가", "냉기 피해 증가", "자연 피해 증가", "치명타 확률 증가", "오리지늄 아츠 증가", "오리지늄 아츠 강도 증가", "궁극기 획득 효율 증가", "궁극기 충전 효율 증가", "아츠 피해 증가", "치유 효율 증가"],
             series: ["강공", "억제", "추격", "분쇄", "사기", "기예", "잔혹", "고통", "의료", "골절", "방출", "어둠", "흐름", "효율"]
         };
 
+        // --- 스타일 헬퍼 함수 ---
+        function getRarityStyles(rarity) {
+            switch(parseInt(rarity)) {
+                case 6: return { text: 'text-orange-400', badge: 'text-orange-400 border-orange-400/50 bg-orange-400/10 shadow-[0_0_8px_rgba(251,146,60,0.2)]' };
+                case 5: return { text: 'text-yellow-200', badge: 'text-yellow-200 border-yellow-200/50 bg-yellow-200/10' };
+                case 4: return { text: 'text-purple-300', badge: 'text-purple-300 border-purple-300/50 bg-purple-300/10' };
+                default: return { text: 'text-blue-200', badge: 'text-blue-200 border-blue-200/50 bg-blue-200/10' };
+            }
+        }
+
+        // --- [수정됨] 로직 함수: 가이드 박스 업데이트 ---
+        function updateDecisionBox(filteredWeapons) {
+            const box = document.getElementById('decision-box');
+            box.classList.remove('hidden');
+
+            // 1. 옵션 미선택 시
+            if (activeTags.size === 0) {
+                box.className = "mb-6 p-6 rounded-xl border-2 border-dashed border-gray-600 bg-gray-800/50 text-gray-400 flex flex-col items-center justify-center text-center";
+                box.innerHTML = `
+                    <p class="text-lg font-bold">💡 기질 필터에서 옵션을 선택해주세요.</p>
+                    <p class="text-sm opacity-70">선택하신 조합에 6성 무기가 포함되는지 확인해 드립니다.</p>
+                `;
+                return;
+            }
+
+            // 2. [수정] 결과 없음 = 갈아! (조합 없음)
+            if (filteredWeapons.length === 0) {
+                box.className = "mb-6 p-6 rounded-xl border-4 border-gray-500 bg-gray-700 text-gray-300 flex flex-col items-center justify-center text-center";
+                box.innerHTML = `
+                    <h2 class="text-3xl font-black mb-1">🗑️ 갈아! (조합 없음)</h2>
+                    <p class="text-sm font-bold">이 조합을 사용하는 무기가 아예 없습니다.</p>
+                `;
+                return;
+            }
+
+            // 3. 결과 있음 - 최고 등급 계산
+            const maxRarity = Math.max(...filteredWeapons.map(w => w.rarity || 0));
+
+            if (maxRarity >= 6) {
+                // [수정] 옵션 개수에 따른 분기 처리
+                if (activeTags.size >= 2) {
+                    // 옵션 2개 이상 + 6성 있음 -> "갈지마!" (강력 경고)
+                    box.className = "mb-6 p-6 rounded-xl border-4 border-orange-500 bg-orange-900/30 text-orange-400 animate-pulse flex flex-col items-center justify-center text-center";
+                    box.innerHTML = `
+                        <h2 class="text-3xl font-black mb-1">🚫 갈지마! (절대 보존)</h2>
+                        <p class="text-sm font-bold">선택하신 조합을 핵심으로 사용하는 6성 무기가 있습니다.</p>
+                    `;
+                } else {
+                    // 옵션 1개 + 6성 있음 -> "6성 포함" (단순 안내)
+                    box.className = "mb-6 p-6 rounded-xl border-4 border-orange-400/60 bg-orange-900/10 text-orange-300 flex flex-col items-center justify-center text-center";
+                    box.innerHTML = `
+                        <h2 class="text-3xl font-black mb-1">✨ 6성 포함 (보존 권장)</h2>
+                        <p class="text-sm font-bold">이 기질을 사용하는 6성 무기가 존재합니다. (다른 옵션과 조합해보세요)</p>
+                    `;
+                }
+            } else if (maxRarity === 5) {
+                // 5성 -> "고려"
+                box.className = "mb-6 p-6 rounded-xl border-4 border-yellow-400 bg-yellow-900/30 text-yellow-200 flex flex-col items-center justify-center text-center";
+                box.innerHTML = `
+                    <h2 class="text-3xl font-black mb-1">⚠️ 고려 (신중히 결정)</h2>
+                    <p class="text-sm font-bold">최대 5성 무기까지만 사용하는 기질입니다.</p>
+                `;
+            } else {
+                // 4성 이하 -> "갈아!"
+                box.className = "mb-6 p-6 rounded-xl border-4 border-gray-500 bg-gray-700 text-gray-300 flex flex-col items-center justify-center text-center";
+                box.innerHTML = `
+                    <h2 class="text-3xl font-black mb-1">🗑️ 갈아! (정리 가능)</h2>
+                    <p class="text-sm font-bold">4성 이하의 무기들만 이 기질을 사용합니다.</p>
+                `;
+            }
+        }
+
+        // --- 로직 함수: 무기 카드 HTML 생성 ---
+        function createWeaponCard(w, index) {
+            const styles = getRarityStyles(w.rarity);
+            
+            const imageHtml = w.image ? 
+                `<img src="${w.image}" class="w-full h-full object-contain p-2" alt="${w.name}" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                 <div class="hidden flex flex-col items-center"><span class="text-3xl mb-2">🚫</span><span class="text-xs text-gray-500 text-center">이미지 없음</span></div>` : 
+                `<span class="text-4xl text-gray-600">⚔️</span>`;
+
+            return `
+                <div id="weapon-${index}" class="group border-gray-700">
+                    <div onclick="toggleAccordion(${index})" class="grid grid-cols-12 gap-4 px-6 py-5 cursor-pointer hover:bg-gray-750 items-center">
+                        <div class="col-span-5 md:col-span-4">
+                            <div class="flex items-center gap-2">
+                                <span class="arrow-icon text-blue-400 text-xs">▼</span>
+                                <span class="text-lg font-black ${styles.text} transition">${w.name}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-1 ml-5">
+                                <span class="text-[11px] px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded font-bold">${w.type}</span>
+                                <span class="text-[11px] font-black px-1.5 py-0.5 rounded border ${styles.badge}">★ ${w.rarity}</span>
+                            </div>
+                        </div>
+                        <div class="hidden md:block col-span-3 text-center text-base font-bold text-gray-200">
+                            ${w.recommend || '-'}
+                        </div>
+                        <div class="col-span-7 md:col-span-5 flex flex-wrap justify-end md:justify-start gap-1">
+                            ${w.tags.map(t => `<span class="text-xs bg-gray-900 border border-gray-700 px-2 py-1 rounded text-gray-300 font-bold">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="details-content bg-gray-900/50 px-6">
+                        <div class="py-6 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-gray-800">
+                            <div class="flex items-center justify-center bg-gray-800 rounded-lg overflow-hidden border border-gray-700 min-h-[200px] relative">
+                                ${imageHtml}
+                            </div>
+                            <div class="space-y-4">
+                                <div><h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Main Stat</h4><p class="text-xl font-black text-blue-200">${w.main_stat}</p></div>
+                                <div><h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Sub Stat</h4><p class="text-lg font-semibold text-green-400">${w.sub_stat}</p></div>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 text-blue-400">장비 효과</h4>
+                                <div class="text-base font-medium leading-relaxed text-gray-300 whitespace-pre-line">${w.effects}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 메인 렌더링 함수 ---
+        function updateUI() {
+            const list = document.getElementById('weapon-list');
+            const sortedWeapons = [...weapons].sort((a, b) => (b.rarity || 0) - (a.rarity || 0));
+            
+            const filtered = sortedWeapons.filter(w => 
+                Array.from(activeTags).every(t => w.tags.includes(t))
+            );
+
+            updateDecisionBox(filtered);
+
+            if (filtered.length === 0) {
+                // 리스트에는 아무것도 표시하지 않음 (가이드 박스에서 '갈아'라고 알려주므로)
+                list.innerHTML = `<div class="p-12 text-center text-gray-500 opacity-50">일치하는 무기가 없습니다.</div>`;
+            } else {
+                list.innerHTML = filtered.map((w, index) => createWeaponCard(w, index)).join('');
+            }
+        }
+
+        // --- 태그 렌더링 ---
         function renderTags() {
-            //식각 컨테이너 초기화
             const containers = {
                 stats: document.getElementById('tags-stats'),
                 attrs: document.getElementById('tags-attrs'),
                 series: document.getElementById('tags-series')
             };
-            
-            Object.keys(containers).forEach(key => containers[key].innerHTML = '');
+            Object.values(containers).forEach(el => el.innerHTML = '');
 
             allTags.forEach(tag => {
-                // 태그가 어느 카테고리에 속하는지 확인
-                let category = 'attrs'; // 기본값
-                if (categories.stats.includes(tag)) category = 'stats';
-                else if (categories.series.includes(tag)) category = 'series';
+                let category = 'attrs';
+                if (CATEGORIES.stats.includes(tag)) category = 'stats';
+                else if (CATEGORIES.series.includes(tag)) category = 'series';
 
-                const btnColor = activeTags.has(tag) ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-600 text-gray-400 hover:bg-gray-700';
+                const isActive = activeTags.has(tag);
+                const btnColor = isActive ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/30' : 'border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-200';
                 
-                const btn = `
-                    <button onclick="toggleTag('${tag}')" 
-                        class="px-3 py-1.5 rounded border text-sm font-bold transition ${btnColor}">
-                        ${tag}
-                    </button>
-                `;
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded border text-sm font-bold transition duration-200 ${btnColor}`;
+                btn.textContent = tag;
+                btn.onclick = () => toggleTag(tag);
                 
-                containers[category].innerHTML += btn;
+                containers[category].appendChild(btn);
             });
         }
 
         function toggleTag(tag) {
             activeTags.has(tag) ? activeTags.delete(tag) : activeTags.add(tag);
             renderTags();
-            renderWeapons();
+            updateUI();
         }
 
         function resetFilters() {
             activeTags.clear();
             renderTags();
-            renderWeapons();
+            updateUI();
         }
 
-        function toggleAccordion(id) {
-            const element = document.getElementById(`weapon-${id}`);
-            element.classList.toggle('details-open');
-        }
-
-        function renderWeapons() {
-            const list = document.getElementById('weapon-list');
-            
-            // 1. 희귀도(rarity) 기준 내림차순 정렬 (6성 -> 3성)
-            // 원본 데이터 보존을 위해 spread 연산자(...)를 사용해 복사본을 정렬합니다.
-            const sortedWeapons = [...weapons].sort((a, b) => (b.rarity || 0) - (a.rarity || 0));
-
-            // 2. 활성화된 태그 필터링 적용
-            const filtered = sortedWeapons.filter(w => 
-                Array.from(activeTags).every(t => w.tags.includes(t))
-            );
-
-            // 희귀도별 텍스트 색상 정의
-            const rarityColor = {
-                6: 'text-orange-400', // 전설
-                5: 'text-yellow-200', // 에픽
-                4: 'text-purple-300', // 희귀
-                3: 'text-blue-200'    // 일반
-            };
-
-            list.innerHTML = filtered.map((w, index) => `
-                <div id="weapon-${index}" class="group border-gray-700">
-                    <div onclick="toggleAccordion(${index})" class="grid grid-cols-12 gap-4 px-6 py-5 cursor-pointer hover:bg-gray-750 items-center">
-                        <div class="col-span-5 md:col-span-4">
-                            <div class="flex items-center gap-2">
-                                <span class="arrow-icon text-blue-400 text-xs">▼</span>
-                                <span class="text-lg font-black ${rarityColor[w.rarity] || 'text-blue-300'} transition">${w.name}</span>
-                            </div>
-                            <div class="flex items-center gap-1.5 mt-1 ml-5">
-                                <span class="text-[11px] px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded font-bold">
-                                    ${w.type}
-                                </span>
-                                <span class="text-[11px] font-black px-1.5 py-0.5 rounded border ${
-                                    w.rarity == 6 ? 'text-orange-400 border-orange-400/50 bg-orange-400/10 shadow-[0_0_8px_rgba(251,146,60,0.2)]' :
-                                    w.rarity == 5 ? 'text-yellow-200 border-yellow-200/50 bg-yellow-200/10' :
-                                    w.rarity == 4 ? 'text-purple-300 border-purple-300/50 bg-purple-300/10' :
-                                    'text-blue-200 border-blue-200/50 bg-blue-200/10'
-                                }">
-                                    ★ ${w.rarity}
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="hidden md:block col-span-3 text-center text-base font-bold text-gray-200">
-                            ${w.recommend || '-'}
-                        </div>
-
-                        <div class="col-span-7 md:col-span-5 flex flex-wrap justify-end md:justify-start gap-1">
-                            ${w.tags.map(t => `<span class="text-xs bg-gray-900 border border-gray-700 px-2 py-1 rounded text-gray-300 font-bold">${t}</span>`).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="details-content bg-gray-900/50 px-6">
-                        <div class="py-6 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-gray-800">
-                            <div class="flex items-center justify-center bg-gray-800 rounded-lg overflow-hidden border border-gray-700 min-h-[200px] relative">
-                                ${w.image ? 
-                                    `<img src="${w.image}" 
-                                        class="w-full h-full object-contain p-2" 
-                                        alt="${w.name}"
-                                        onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
-                                    <div class="hidden flex flex-col items-center">
-                                        <span class="text-3xl mb-2">🚫</span>
-                                        <span class="text-xs text-gray-500 text-center">이미지를 찾을 수 없습니다<br>(파일명 확인 필요)</span>
-                                    </div>` 
-                                    : `<span class="text-4xl text-gray-600">⚔️</span>`
-                                }
-                            </div>
-                            
-                            <div class="space-y-4">
-                                <div>
-                                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Main Stat</h4>
-                                    <p class="text-xl font-black text-blue-200">${w.main_stat}</p>
-                                </div>
-                                <div>
-                                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Sub Stat</h4>
-                                    <p class="text-lg font-semibold text-green-400">${w.sub_stat}</p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-blue-400">장비 효과</h4>
-                                <div class="text-base font-medium leading-relaxed text-gray-300 whitespace-pre-line">
-                                    ${w.effects}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="p-12 text-center text-gray-500">조건에 맞는 결과가 없습니다.</div>`;
-            }
+        function toggleAccordion(index) {
+            document.getElementById(`weapon-${index}`).classList.toggle('details-open');
         }
 
         loadData();
