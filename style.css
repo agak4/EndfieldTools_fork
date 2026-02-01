@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;900&display=swap');
+
+body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
+.no-select { user-select: none; -webkit-user-select: none; }
+
+.glass-panel { 
+    background: rgba(30, 41, 59, 0.7); 
+    backdrop-filter: blur(12px); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); 
+}
+
+/* [신규] 하단 요약 바 (Summary Bar) */
+#farming-summary-bar {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(100%); /* 기본적으로 숨김 */
+}
+#farming-summary-bar.show { transform: translateY(0); }
+
+/* [신규] 전략 패널 (Strategy Drawer) */
+#farming-strategy-drawer {
+    transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    transform: translateY(110%); /* 아래로 숨김 */
+    z-index: 50;
+}
+#farming-strategy-drawer.open { transform: translateY(0); }
+
+/* 우선순위 강조 효과 */
+.priority-target {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    transform: scale(1.05);
+    z-index: 10;
+}
+.priority-crown {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    font-size: 16px; z-index: 20; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+}
+
+/* 적중률 배지 */
+.match-badge {
+    position: absolute; bottom: -6px; right: -6px;
+    font-size: 10px; font-weight: 900; padding: 2px 6px;
+    border-radius: 999px; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.match-good { background: #10b981; color: white; }
+.match-mid { background: #f59e0b; color: white; }
+.match-bad { background: #64748b; color: #cbd5e1; }
+
+.details-content { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s; }
+.details-open .details-content { max-height: 1000px; opacity: 1; margin-top: 1rem; }
