@@ -19,7 +19,6 @@
         .task-item.completed .glass-panel { background: rgba(15, 23, 42, 0.6); }
         .task-item.completed .task-content { opacity: 0.5; text-decoration: line-through; color: #94a3b8; }
         
-        /* 드래그 핸들 */
         .drag-handle { cursor: grab; touch-action: none; }
         .drag-handle:active { cursor: grabbing; color: #34d399; }
         
@@ -29,19 +28,18 @@
 
         .progress-bar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        /* [수정됨] 쓰레기통 스타일: 평소엔 터치 불가(none) -> 활성화 시 터치 가능(auto) */
+        /* 쓰레기통 스타일 */
         #trash-zone {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             transform: translateX(-100%);
             opacity: 0;
-            pointer-events: none; /* 평소에는 클릭 통과 (버그 수정 핵심) */
-            /* 은은한 붉은 빛 그라데이션 */
+            pointer-events: none; 
             background: linear-gradient(to right, rgba(220, 38, 38, 0.5) 0%, rgba(220, 38, 38, 0.05) 70%, transparent 100%);
         }
         #trash-zone.active {
             transform: translateX(0);
             opacity: 1;
-            pointer-events: auto; /* 활성화 되면 드랍 가능하게 변경 */
+            pointer-events: auto;
         }
         #trash-zone .sortable-ghost { display: none; }
     </style>
@@ -119,8 +117,7 @@
                 <h2 class="text-lg md:text-xl font-bold text-white">제외된 항목 관리</h2>
                 <button onclick="taskManager.closeHiddenManager()" class="text-slate-400 text-2xl leading-none hover:text-white">&times;</button>
             </div>
-            <div id="hidden-list" class="overflow-y-auto p-5 space-y-3">
-                </div>
+            <div id="hidden-list" class="overflow-y-auto p-5 space-y-3"></div>
             <div class="p-5 border-t border-slate-800 bg-slate-900 rounded-b-3xl">
                 <button onclick="taskManager.closeHiddenManager()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg">닫기</button>
             </div>
@@ -133,19 +130,26 @@
                 this.storageKey = 'endfield_tasks_v3'; 
                 this.resetHour = 5; 
                 this.tasks = []; 
+                this.defaultConfig = {}; // config.json에서 로드할 값
                 this.currentTab = 'daily';
                 this.sortable = null;
-                this.trashSortable = null; 
-                this.state = this.loadState();
-                
-                if (typeof this.state.hideCompleted === 'undefined') this.state.hideCompleted = false;
-                if (typeof this.state.hiddenTasks === 'undefined') this.state.hiddenTasks = {}; 
+                this.trashSortable = null;
+                this.state = {}; // init에서 로드됨
                 
                 this.init();
             }
 
             async init() {
-                await this.loadData();
+                // 1. 데이터와 설정 파일을 병렬 로드
+                await Promise.all([this.loadData(), this.loadConfig()]);
+                
+                // 2. 상태 로드 (로컬스토리지 or Config값)
+                this.state = this.loadState();
+                
+                // 3. 상태값 보정
+                if (typeof this.state.hideCompleted === 'undefined') this.state.hideCompleted = false;
+                if (typeof this.state.hiddenTasks === 'undefined') this.state.hiddenTasks = {}; 
+
                 this.checkReset();
                 this.render();
                 this.initTrashZone(); 
@@ -161,15 +165,33 @@
                 }
             }
 
+            // [신규] config.json 로드
+            async loadConfig() {
+                try {
+                    const response = await fetch('config.json');
+                    if(response.ok) {
+                        this.defaultConfig = await response.json();
+                    }
+                } catch (error) {
+                    console.log("config.json이 없거나 로드 실패. 기본값 사용.");
+                    this.defaultConfig = { order: { daily: [], weekly: [] }, hiddenTasks: {} };
+                }
+            }
+
             loadState() {
                 const saved = localStorage.getItem(this.storageKey);
-                return saved ? JSON.parse(saved) : { 
-                    lastLogin: Date.now(), 
-                    completed: {},
-                    order: { daily: [], weekly: [] },
-                    hideCompleted: false,
-                    hiddenTasks: {} 
-                };
+                if (saved) {
+                    return JSON.parse(saved);
+                } else {
+                    // 저장된 기록이 없으면 config.json의 설정값을 초기값으로 사용
+                    return { 
+                        lastLogin: Date.now(), 
+                        completed: {}, 
+                        order: this.defaultConfig.order || { daily: [], weekly: [] },
+                        hiddenTasks: this.defaultConfig.hiddenTasks || {},
+                        hideCompleted: false
+                    };
+                }
             }
 
             saveState() {
@@ -250,8 +272,9 @@
             }
 
             resetOrder() {
-                if(!confirm('순서를 되돌리겠습니까?')) return;
-                this.state.order[this.currentTab] = [];
+                if(!confirm('순서를 초기 설정으로 되돌리겠습니까?')) return;
+                // config.json의 순서로 복구
+                this.state.order = JSON.parse(JSON.stringify(this.defaultConfig.order || { daily: [], weekly: [] }));
                 this.saveState();
             }
 
@@ -263,15 +286,12 @@
 
             initTrashZone() {
                 const trashEl = document.getElementById('trash-zone');
-                
                 this.trashSortable = new Sortable(trashEl, {
                     group: 'tasks',
                     animation: 150,
                     ghostClass: 'hidden',
                     onAdd: (evt) => {
-                        // [버그 수정] 드롭 즉시 닫기
                         document.getElementById('trash-zone').classList.remove('active');
-                        
                         const id = evt.item.dataset.id;
                         this.hideTask(id);
                         evt.item.remove();
@@ -317,20 +337,6 @@
                 this.saveStateSilent();
             }
 
-            toggleDetail(event, id) {
-                const card = event.currentTarget.closest('.task-item');
-                const desc = card.querySelector('.task-desc');
-                const tags = card.querySelector('.task-tags');
-                
-                if (desc.classList.contains('line-clamp-1')) {
-                    desc.classList.remove('line-clamp-1');
-                    tags.classList.remove('hidden'); 
-                } else {
-                    desc.classList.add('line-clamp-1');
-                    tags.classList.add('hidden'); 
-                }
-            }
-
             render() {
                 if (this.tasks.length === 0) return;
 
@@ -354,6 +360,7 @@
                 let currentTasks = this.tasks.filter(t => t.type === this.currentTab);
                 const savedOrder = this.state.order?.[this.currentTab] || [];
                 
+                // 순서 정렬 (config나 저장된 순서 우선)
                 if (savedOrder.length > 0) {
                     const orderMap = new Map(savedOrder.map((id, index) => [id, index]));
                     currentTasks.sort((a, b) => {
@@ -369,6 +376,7 @@
                 let visibleCount = 0;
 
                 currentTasks.forEach((task, index) => {
+                    // 숨김 태스크 패스
                     if (this.state.hiddenTasks && this.state.hiddenTasks[task.id]) return;
 
                     const isDone = this.state.completed[task.id] || false;
@@ -392,6 +400,7 @@
                         `<span class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-800 border border-slate-700 px-1.5 py-0.5 md:px-2 md:py-1 rounded">${tag}</span>`
                     ).join('');
 
+                    // [변경] 아코디언 없음! 카드 클릭 시 바로 완료 토글
                     const itemHtml = `
                         <div class="task-item group relative pl-2 md:pl-4 py-2 ${isDone ? 'completed' : ''}" data-id="${task.id}">
                             
@@ -404,7 +413,7 @@
                                     </div>
                                 </div>
 
-                                <div class="flex-1 min-w-0 task-content" onclick="taskManager.toggleDetail(event, '${task.id}'); event.stopPropagation();">
+                                <div class="flex-1 min-w-0 task-content">
                                     <div class="flex items-center justify-between mb-0.5 md:mb-1.5">
                                         <h3 class="task-title text-base md:text-xl font-bold text-white truncate pr-2">${task.title}</h3>
                                     </div>
