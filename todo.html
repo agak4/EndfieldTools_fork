@@ -73,21 +73,21 @@
                     <div id="progress-bar" class="progress-bar bg-gradient-to-r from-emerald-500 to-cyan-500 h-3 md:h-4 rounded-full w-0 shadow-[0_0_10px_#10b981]"></div>
                 </div>
                 
-                <div class="flex flex-wrap justify-between items-center border-t border-white/10 pt-3 gap-2">
+                <div class="flex flex-wrap justify-between items-center border-t border-white/10 pt-3 gap-y-2">
                     <div class="flex gap-2">
-                        <button id="btn-toggle-completed" onclick="taskManager.toggleHideCompleted()" class="px-3 py-2 rounded-lg bg-emerald-900/30 text-xs md:text-sm font-bold text-emerald-400 border border-emerald-700/50 hover:bg-emerald-800/50 transition-colors flex items-center gap-1.5">
+                        <button id="btn-toggle-completed" onclick="taskManager.toggleHideCompleted()" class="px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-emerald-900/30 text-[11px] md:text-sm font-bold text-emerald-400 border border-emerald-700/50 hover:bg-emerald-800/50 transition-colors flex items-center gap-1.5">
                             <span>👁️</span> <span id="text-toggle-completed">완료 숨기기</span>
                         </button>
-                        <button onclick="taskManager.openHiddenManager()" class="px-3 py-2 rounded-lg bg-slate-800 text-xs md:text-sm font-bold text-slate-400 border border-slate-600 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-1.5">
+                        <button onclick="taskManager.openHiddenManager()" class="px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-slate-800 text-[11px] md:text-sm font-bold text-slate-400 border border-slate-600 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-1.5">
                             ⚙️ 제외 관리
                         </button>
                     </div>
 
-                    <div class="flex gap-2 ml-auto">
-                        <button onclick="taskManager.resetOrder()" class="px-3 py-2 rounded-lg bg-slate-800 text-xs md:text-sm font-bold text-slate-300 border border-slate-600 hover:bg-slate-700 hover:text-white transition-colors">
+                    <div class="flex gap-2">
+                        <button onclick="taskManager.resetOrder()" class="px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-slate-800 text-[11px] md:text-sm font-bold text-slate-300 border border-slate-600 hover:bg-slate-700 hover:text-white transition-colors">
                             ↺ 순서
                         </button>
-                        <button onclick="taskManager.forceReset()" class="px-3 py-2 rounded-lg bg-slate-800 text-xs md:text-sm font-bold text-red-400 border border-slate-600 hover:bg-slate-700 hover:text-red-300 transition-colors">
+                        <button onclick="taskManager.forceReset()" class="px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-slate-800 text-[11px] md:text-sm font-bold text-red-400 border border-slate-600 hover:bg-slate-700 hover:text-red-300 transition-colors">
                             ✖ 리셋
                         </button>
                     </div>
@@ -130,11 +130,11 @@
                 this.storageKey = 'endfield_tasks_v3'; 
                 this.resetHour = 5; 
                 this.tasks = []; 
-                this.defaultConfig = {}; // config.json에서 로드할 값
+                this.defaultConfig = {}; 
                 this.currentTab = 'daily';
                 this.sortable = null;
                 this.trashSortable = null;
-                this.state = {}; // init에서 로드됨
+                this.state = {}; 
                 
                 this.init();
             }
@@ -143,7 +143,7 @@
                 // 1. 데이터와 설정 파일을 병렬 로드
                 await Promise.all([this.loadData(), this.loadConfig()]);
                 
-                // 2. 상태 로드 (로컬스토리지 or Config값)
+                // 2. 상태 로드
                 this.state = this.loadState();
                 
                 // 3. 상태값 보정
@@ -165,32 +165,43 @@
                 }
             }
 
-            // [신규] config.json 로드
+            // [수정됨] 캐시 방지를 위해 타임스탬프 추가
             async loadConfig() {
                 try {
-                    const response = await fetch('config.json');
+                    // ?t=... 로 매번 새로운 파일 요청 (브라우저 캐시 무시)
+                    const response = await fetch('config.json?t=' + new Date().getTime());
                     if(response.ok) {
                         this.defaultConfig = await response.json();
+                    } else {
+                        console.warn("config.json 응답 없음");
+                        this.defaultConfig = { order: { daily: [], weekly: [] }, hiddenTasks: {} };
                     }
                 } catch (error) {
-                    console.log("config.json이 없거나 로드 실패. 기본값 사용.");
+                    console.log("config.json 로드 실패. 기본값 사용.");
                     this.defaultConfig = { order: { daily: [], weekly: [] }, hiddenTasks: {} };
                 }
             }
 
+            // [수정됨] Deep Copy를 통한 설정값 적용
             loadState() {
                 const saved = localStorage.getItem(this.storageKey);
+                
+                // config.json에서 가져온 기본값 (깊은 복사)
+                // 중요: defaultConfig를 그대로 쓰면 참조 문제가 발생할 수 있으므로 JSON.parse/stringify로 복제
+                const initialConfig = JSON.parse(JSON.stringify(this.defaultConfig));
+                
+                const defaultState = { 
+                    lastLogin: Date.now(), 
+                    completed: {}, 
+                    order: initialConfig.order || { daily: [], weekly: [] },
+                    hiddenTasks: initialConfig.hiddenTasks || {},
+                    hideCompleted: false
+                };
+
                 if (saved) {
                     return JSON.parse(saved);
                 } else {
-                    // 저장된 기록이 없으면 config.json의 설정값을 초기값으로 사용
-                    return { 
-                        lastLogin: Date.now(), 
-                        completed: {}, 
-                        order: this.defaultConfig.order || { daily: [], weekly: [] },
-                        hiddenTasks: this.defaultConfig.hiddenTasks || {},
-                        hideCompleted: false
-                    };
+                    return defaultState;
                 }
             }
 
@@ -360,7 +371,6 @@
                 let currentTasks = this.tasks.filter(t => t.type === this.currentTab);
                 const savedOrder = this.state.order?.[this.currentTab] || [];
                 
-                // 순서 정렬 (config나 저장된 순서 우선)
                 if (savedOrder.length > 0) {
                     const orderMap = new Map(savedOrder.map((id, index) => [id, index]));
                     currentTasks.sort((a, b) => {
@@ -376,7 +386,6 @@
                 let visibleCount = 0;
 
                 currentTasks.forEach((task, index) => {
-                    // 숨김 태스크 패스
                     if (this.state.hiddenTasks && this.state.hiddenTasks[task.id]) return;
 
                     const isDone = this.state.completed[task.id] || false;
@@ -400,7 +409,6 @@
                         `<span class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-800 border border-slate-700 px-1.5 py-0.5 md:px-2 md:py-1 rounded">${tag}</span>`
                     ).join('');
 
-                    // [변경] 아코디언 없음! 카드 클릭 시 바로 완료 토글
                     const itemHtml = `
                         <div class="task-item group relative pl-2 md:pl-4 py-2 ${isDone ? 'completed' : ''}" data-id="${task.id}">
                             
