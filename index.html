@@ -27,21 +27,38 @@
         .animate-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black selection:bg-blue-500 selection:text-white relative text-base">
+<body class="bg-slate-950 text-slate-100 min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black selection:bg-blue-500 selection:text-white relative text-base">
     
-    <div class="max-w-3xl mx-auto space-y-8 pb-24">
+    <nav class="flex justify-center gap-2 p-4 bg-slate-900/50 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
+        <a href="index.html" class="px-6 py-3 rounded-xl text-base font-bold transition-all bg-blue-600 text-white shadow-lg scale-105">
+            🧮 기질 계산기
+        </a>
+        <a href="todo.html" class="px-6 py-3 rounded-xl text-base font-bold transition-all bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white">
+            📝 숙제 관리
+        </a>
+    </nav>
+
+    <div class="max-w-3xl mx-auto space-y-6 pb-24 mt-6 px-4 md:px-8">
         
-        <header class="text-center py-6">
-            <h1 class="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">엔드필드</span> 기질 계산기
-            </h1>
-        </header>
+        <section id="decision-box" class="sticky top-24 z-40 drop-shadow-2xl transition-all duration-300">
+            </section>
 
         <section class="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-lg">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                    <span class="w-2 h-6 bg-blue-500 rounded-full"></span> 기질 필터
-                </h2>
+                <div class="flex flex-col gap-2">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                        <span class="w-2 h-6 bg-blue-500 rounded-full"></span> 기질 필터
+                    </h2>
+                    
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-xs font-bold text-slate-400">목표:</span>
+                        <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700">
+                            <button onclick="setTargetRarity(5)" id="btn-rarity-5" class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white">5성+</button>
+                            <button onclick="setTargetRarity(6)" id="btn-rarity-6" class="px-3 py-1 rounded-md text-xs font-bold transition-all bg-orange-600 text-white shadow-md">6성</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex gap-3 w-full md:w-auto">
                     <button onclick="openInventoryModal()" class="flex-1 md:flex-none text-sm font-bold text-emerald-300 bg-emerald-900/30 border border-emerald-700/50 px-4 py-3 rounded-xl hover:bg-emerald-800/50 transition-colors">
                         보유 기질 관리
@@ -67,9 +84,6 @@
                 </div>
             </div>
         </section>
-
-        <section id="decision-box" class="sticky top-4 z-40 drop-shadow-2xl transition-all duration-300">
-            </section>
 
         <section class="space-y-4">
             <div class="flex flex-wrap items-center justify-between px-2 gap-3">
@@ -100,7 +114,7 @@
             <div class="flex justify-between items-start p-6 border-b border-slate-800 bg-slate-800/50 rounded-t-3xl">
                 <div>
                     <h2 class="text-2xl font-bold text-white">보유 기질 관리</h2>
-                    <p class="text-sm text-slate-400 mt-2 leading-relaxed">이미 3유효 기질을 보유한 무기를 선택하면<br>검색 판단 시 제외됩니다.</p>
+                    <p class="text-sm text-slate-400 mt-2 leading-relaxed">이미 3유효 기질을 졸업한 무기를 선택하면<br>목록에 체크 표시가 남습니다.</p>
                 </div>
                 <button onclick="closeInventoryModal()" class="text-slate-400 p-2 text-3xl leading-none hover:text-white transition-colors">&times;</button>
             </div>
@@ -128,6 +142,7 @@
         let activeTags = new Set();
         let ownedWeapons = new Set(JSON.parse(localStorage.getItem('endfield_owned_weapons') || '[]'));
         let searchQuery = ""; 
+        let targetRarity = 6; // 기본 목표 등급 (6성)
 
         async function loadData() {
             try {
@@ -143,6 +158,20 @@
             stats: ["민첩 증가", "힘 증가", "의지 증가", "지능 증가", "주요 능력치 증가"],
             series: ["강공", "억제", "추격", "분쇄", "사기", "기예", "잔혹", "고통", "의료", "골절", "방출", "어둠", "흐름", "효율"]
         };
+
+        function setTargetRarity(rarity) {
+            targetRarity = rarity;
+            const btn5 = document.getElementById('btn-rarity-5');
+            const btn6 = document.getElementById('btn-rarity-6');
+            if (rarity === 5) {
+                btn5.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-yellow-500 text-white shadow-md";
+                btn6.className = "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white";
+            } else {
+                btn5.className = "px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white";
+                btn6.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-orange-600 text-white shadow-md";
+            }
+            updateUI();
+        }
 
         function handleSearch(value) {
             searchQuery = value.trim();
@@ -167,66 +196,82 @@
             }
         }
 
+        // [판단 로직]
         function updateDecisionBox(filteredWeapons) {
             const box = document.getElementById('decision-box');
             
+            // 초기 화면
             if (activeTags.size === 0 && searchQuery === "") { 
-                box.innerHTML = `
-                    <div class="bg-slate-800/90 rounded-2xl p-8 text-center border-2 border-dashed border-slate-600">
-                        <p class="text-4xl mb-3 grayscale opacity-70">👆</p>
-                        <h3 class="text-2xl font-bold text-slate-300">기질을 선택해주세요</h3>
-                    </div>`;
+                renderBox(box, '필터에서 옵션을 선택해주세요', '', 'bg-slate-800/90 border-dashed border-slate-600', 'text-2xl md:text-3xl');
                 return;
             }
 
             if (filteredWeapons.length === 0) {
-                renderBox(box, '🗑️ 갈아', '해당하는 무기가 없습니다.', 'bg-slate-700');
+                renderBox(box, '갈아', '필요없음', 'bg-slate-700');
                 return;
             }
 
+            const maxRarityInPool = Math.max(...filteredWeapons.map(w => w.rarity || 0));
+            const minRarityInPool = Math.min(...filteredWeapons.map(w => w.rarity || 0));
+
+            // 1. [확정 득템] 꽝이 하나도 없음
+            if (minRarityInPool >= targetRarity) {
+                const bgClass = targetRarity === 6 ? 'bg-red-600 animate-pulse border-red-400' : 'bg-yellow-600 border-yellow-400';
+                renderBox(box, '갈지마', '킵하고 잠금ㄱ', bgClass);
+                return;
+            }
+
+            // 2. [3유효 저격] 3옵션 & 고등급 섞여있음
+            if (activeTags.size >= 3 && maxRarityInPool >= targetRarity) {
+                const bgClass = targetRarity === 6 ? 'bg-red-600 animate-pulse border-red-400' : 'bg-yellow-600 border-yellow-400';
+                renderBox(box, '갈지마', '킵하고 잠금ㄱ', bgClass);
+                return;
+            }
+
+            // 3. [일반 탐색]
             const unownedWeapons = filteredWeapons.filter(w => !ownedWeapons.has(w.name));
-            const maxRarityTotal = Math.max(...filteredWeapons.map(w => w.rarity || 0));
             const maxRarityUnowned = unownedWeapons.length > 0 ? Math.max(...unownedWeapons.map(w => w.rarity || 0)) : 0;
-            const minRarityUnowned = unownedWeapons.length > 0 ? Math.min(...unownedWeapons.map(w => w.rarity || 0)) : 0;
 
-            if (maxRarityTotal >= 5 && maxRarityUnowned < 5) {
-                renderBox(box, '🗑️ 갈아', '기질 보유중', 'bg-slate-700');
-                return;
-            }
-
-            if (maxRarityUnowned < 5) {
-                renderBox(box, '🗑️ 갈아', '', 'bg-slate-700');
-            } else if (maxRarityUnowned >= 6) {
-                if (minRarityUnowned >= 6) {
-                    renderBox(box, '🚫 갈지마', '전설무기 3유효', 'bg-red-600 animate-pulse border-red-400');
-                } else {
-                    renderBox(box, '🔍 옵션 더 선택', '검색 결과가 너무 많습니다. <br>범위를 좁혀보세요', 'bg-blue-600');
-                }
-            } else if (maxRarityUnowned === 5) {
-                renderBox(box, '⚠️ 고려', '5성 3유효', 'bg-yellow-600');
+            if (maxRarityUnowned >= targetRarity) {
+                renderBox(box, '옵션 더 선택', '아직 판단 못함', 'bg-blue-600');
+            } else {
+                renderBox(box, '갈아', '필요없음', 'bg-slate-700');
             }
         }
 
-        function renderBox(element, title, desc, bgClass) {
+        // [박스 렌더링 함수]
+        function renderBox(element, title, desc, bgClass, titleSize) {
+            const sizeClass = titleSize || "text-5xl md:text-6xl";
+            
             element.innerHTML = `
-                <div class="${bgClass} rounded-3xl p-8 text-center shadow-2xl border-2 border-white/20 animate-pop relative overflow-hidden transition-colors duration-300">
+                <div class="${bgClass} rounded-3xl h-52 flex flex-col justify-center items-center p-4 text-center shadow-2xl border-2 border-white/20 animate-pop relative overflow-hidden transition-colors duration-300">
                     <div class="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
-                    <h2 class="text-4xl md:text-5xl font-black text-white drop-shadow-md mb-3 relative z-10">${title}</h2>
-                    <p class="text-lg md:text-xl font-bold text-white/90 relative z-10 leading-snug">${desc}</p>
+                    <h2 class="${sizeClass} font-black text-white drop-shadow-lg relative z-10 leading-tight">${title}</h2>
+                    <p class="text-lg md:text-xl font-bold text-white/80 relative z-10 mt-2">${desc}</p>
                 </div>
             `;
         }
 
+        // [수정된 카드 생성 함수]
         function createWeaponCard(w, index) {
             const styles = getRarityStyles(w.rarity);
             const imgPath = w.image ? w.image : `images/${w.name}.png`;
             const isOwned = ownedWeapons.has(w.name);
-            const cardOpacity = isOwned ? 'opacity-50 bg-emerald-900/20 grayscale' : 'bg-slate-800/40';
+            
+            // [변경] 보유 시 회색조 제거하고, 은은한 에메랄드 배경 적용 (테두리는 유지)
+            const cardOpacity = isOwned 
+                ? 'bg-emerald-900/10 border-emerald-500/30' 
+                : 'bg-slate-800/40 border-transparent';
+            
             const checkIcon = isOwned ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center z-20"><span class="text-4xl">✅</span></div>' : '';
+            
+            // [추가] "기질 보유중" 텍스트 (화살표 왼쪽에 배치)
+            const ownedLabel = isOwned ? '<span class="text-xs md:text-sm font-bold text-emerald-400 mr-3 shrink-0">기질 보유중</span>' : '';
+            
             const effectsText = w.effects ? w.effects.trim() : '';
 
             return `
-                <div id="weapon-${index}" class="group relative transition-all duration-200 ${cardOpacity} overflow-hidden">
+                <div id="weapon-${index}" class="group relative transition-all duration-200 ${cardOpacity} border overflow-hidden">
                     <div class="absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar} z-10"></div>
                     
                     <div onclick="toggleAccordion(${index})" class="flex items-center gap-5 px-6 py-5 cursor-pointer pl-8"> 
@@ -245,6 +290,8 @@
                                 ${w.tags.map(t => `<span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300 font-medium">${t}</span>`).join('')}
                             </div>
                         </div>
+
+                        ${ownedLabel}
 
                         <span class="arrow-icon text-slate-500 text-sm">▼</span>
                     </div>
