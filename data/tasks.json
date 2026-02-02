@@ -5,9 +5,7 @@
         "access": "웹 이벤트",
         "title": "일일 출석 체크",
         "desc": "웹 페이지 출석 체크",
-        "tags": [
-            "성장재화"
-        ],
+        "tags": ["성장재화"],
         "default_order": 0,
         "is_default_hidden": false
     },
@@ -27,9 +25,7 @@
         "access": "Y - 지역 건설",
         "title": "거점 관리",
         "desc": "공장 생산품으로 관리권 교환하기",
-        "tags": [
-            "관리권"
-        ],
+        "tags": ["관리권"],
         "default_order": 2,
         "is_default_hidden": false
     },
@@ -39,9 +35,7 @@
         "access": "Y - 지역 건설",
         "title": "물자 관리",
         "desc": "변동물자 싼거 구매 / 친구 가격 보고 판매",
-        "tags": [
-            "관리권"
-        ],
+        "tags": ["관리권"],
         "default_order": 3,
         "is_default_hidden": false
     },
@@ -51,10 +45,7 @@
         "access": "Y - 지역 건설",
         "title": "저장고 노드",
         "desc": "택배 포장·배송·위탁 수행",
-        "tags": [
-            "관리권",
-            "크레딧"
-        ],
+        "tags": ["관리권", "크레딧"],
         "default_order": 4,
         "is_default_hidden": false
     },
@@ -64,9 +55,7 @@
         "access": "Y - 지역 건설",
         "title": "환경 관측 (무릉)",
         "desc": "촬영 퀘스트 수행하기",
-        "tags": [
-            "관리권"
-        ],
+        "tags": ["관리권"],
         "default_order": 5,
         "is_default_hidden": true
     },
@@ -76,10 +65,7 @@
         "access": "제강호",
         "title": "시설 관리 (단축키 I)",
         "desc": "제조실·재배실 리필 / 응접실 단서 수집",
-        "tags": [
-            "성장재화",
-            "크레딧"
-        ],
+        "tags": ["성장재화", "크레딧"],
         "default_order": 6,
         "is_default_hidden": false
     },
@@ -88,10 +74,8 @@
         "type": "daily",
         "access": "제강호",
         "title": "친구 함선 방문",
-        "desc": "생산지원/정보교류 5회",
-        "tags": [
-            "크레딧"
-        ],
+        "desc": "생산지원 5회 / 정보교류 5회",
+        "tags": ["크레딧"],
         "default_order": 7,
         "is_default_hidden": false
     },
@@ -101,9 +85,7 @@
         "access": "제강호",
         "title": "중앙홀 (호출패널)",
         "desc": "오퍼레이터 선물주기 (신뢰도작)",
-        "tags": [
-            "신뢰도"
-        ],
+        "tags": ["신뢰도"],
         "default_order": 8,
         "is_default_hidden": false
     },
@@ -112,10 +94,8 @@
         "type": "daily",
         "access": "F5 - 구매 센터",
         "title": "크레딧 거래소",
-        "desc": "오로베릴/무기고징표/할인품목 구매",
-        "tags": [
-            "성장재화"
-        ],
+        "desc": "오로베릴, 무기고징표 구매 및 할인품목 확인",
+        "tags": ["성장재화"],
         "default_order": 9,
         "is_default_hidden": false
     },
@@ -125,9 +105,7 @@
         "access": "F8 - 가이드북",
         "title": "성장 가이드",
         "desc": "필요한 재화에 이성 태우기",
-        "tags": [
-            "성장재화"
-        ],
+        "tags": ["성장재화"],
         "default_order": 10,
         "is_default_hidden": false
     },
@@ -136,10 +114,8 @@
         "type": "daily",
         "access": "F8 - 가이드북",
         "title": "일상 미션",
-        "desc": "일일 미션 달성 및 활약도 보상 수령",
-        "tags": [
-            "활약도"
-        ],
+        "desc": "일일 미션 달성 / 활약도 보상 수령",
+        "tags": ["활약도"],
         "default_order": 11,
         "is_default_hidden": false
     },
@@ -149,9 +125,7 @@
         "access": "재활용 센터",
         "title": "부엉이",
         "desc": "재활용 센터 노드 방문해 재화 수령",
-        "tags": [
-            "제강호 재화"
-        ],
+        "tags": ["제강호 재화"],
         "default_order": 12,
         "is_default_hidden": false
     }
