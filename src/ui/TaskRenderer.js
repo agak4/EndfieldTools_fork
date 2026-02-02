@@ -44,7 +44,6 @@ export class TaskRenderer {
         }).join('');
     }
 
-    // --- 섹션 헤더 ---
     _createAccessHeader(accessName) {
         return `
             <div class="pt-6 pb-2 px-1 select-none flex items-center gap-2">
@@ -56,7 +55,6 @@ export class TaskRenderer {
         `;
     }
 
-    // --- 공통 스타일 ---
     _getCardStyle(isCompleted) {
         return `glass-panel rounded-xl border transition-all duration-200 overflow-hidden relative
                 ${isCompleted 
@@ -64,13 +62,13 @@ export class TaskRenderer {
                     : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60 shadow-lg'}`;
     }
 
-    // --- [Case A] 단일 카드 (Single View) ---
+    // [Case A] 단일 카드 (touch-none 제거됨)
     _createSingleCard(task, state) {
         const isCompleted = state.completed[task.id];
         const cardStyle = this._getCardStyle(isCompleted);
 
         return `
-            <div class="task-item mb-3 select-none touch-none" data-id="${task.id}">
+            <div class="task-item mb-3 select-none" data-id="${task.id}">
                 <div class="${cardStyle}">
                     <div onclick="window.app.toggleMainTask('${task.id}')" 
                          class="p-4 flex items-center gap-3 cursor-pointer group">
@@ -98,7 +96,7 @@ export class TaskRenderer {
         `;
     }
 
-    // --- [Case B-1] 접힌 카드 (Collapsed View - 간편 모드) ---
+    // [Case B-1] 접힌 카드 (touch-none 제거됨)
     _createCollapsedCard(task, state) {
         const isCompleted = state.completed[task.id];
         const cardStyle = this._getCardStyle(isCompleted);
@@ -108,7 +106,7 @@ export class TaskRenderer {
         const done = task.subtasks.filter(s => subStatus[s.id]).length;
 
         return `
-            <div class="task-item mb-3 select-none touch-none" data-id="${task.id}">
+            <div class="task-item mb-3 select-none" data-id="${task.id}">
                 <div class="${cardStyle}">
                     <div onclick="window.app.toggleMainTask('${task.id}')" 
                          class="p-4 flex items-center gap-3 cursor-pointer group">
@@ -144,7 +142,7 @@ export class TaskRenderer {
         `;
     }
 
-    // --- [Case B-2] 펼친 카드 (Expanded View - 상세 모드) ---
+    // [Case B-2] 펼친 카드 (touch-none 제거됨)
     _createExpandedCard(task, state) {
         const isCompleted = state.completed[task.id];
         const cardStyle = this._getCardStyle(isCompleted);
@@ -177,7 +175,7 @@ export class TaskRenderer {
         }).join('');
 
         return `
-            <div class="task-item mb-3 select-none touch-none" data-id="${task.id}">
+            <div class="task-item mb-3 select-none" data-id="${task.id}">
                 <div class="${cardStyle}">
                     
                     <div class="p-4 flex items-center gap-3 bg-slate-900/30 border-b border-dashed border-slate-700/50">
