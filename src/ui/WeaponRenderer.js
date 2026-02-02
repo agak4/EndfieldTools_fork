@@ -5,8 +5,8 @@ export class WeaponRenderer {
     static createCard(w, index, status) {
         const styles = UIUtils.getRarityStyles(w.rarity);
         
-        // [수정] assets/ 경로 추가
-        const imgPath = w.image ? `assets/${w.image}` : '';
+        const fileName = w.image ? w.image.split('/').pop() : '';
+        const imgPath = fileName ? `assets/images/weapons/${w.rarity} star/${fileName}` : '';
         
         let cardStyle = 'bg-slate-800/40 border-transparent';
         let checkIcon = '';
@@ -24,7 +24,6 @@ export class WeaponRenderer {
 
         const effectsText = w.effects ? w.effects.trim() : '';
 
-        // [수정] onclick 이벤트를 window.app으로 연결 & z-index 조정
         return `
             <div id="weapon-${index}" class="group relative transition-all duration-200 ${cardStyle} border overflow-hidden">
                 <div class="absolute left-0 top-0 bottom-0 w-[4px] md:w-[6px] ${styles.bar} z-10"></div>
@@ -39,7 +38,7 @@ export class WeaponRenderer {
                          onclick="event.stopPropagation(); window.app.handleClick('${w.name}')"
                          oncontextmenu="return false;">
                         ${checkIcon}
-                        <img src="${imgPath}" class="w-full h-full object-contain p-1 md:p-1.5" onerror="this.style.display='none'">
+                        <img src="${imgPath}" loading="lazy" class="w-full h-full object-contain p-1 md:p-1.5" onerror="this.style.display='none'">
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
@@ -57,7 +56,7 @@ export class WeaponRenderer {
                 <div class="details-content bg-slate-900/50 px-4 md:px-6 border-t border-white/5 ml-[4px] md:ml-[6px]">
                     <div class="py-6 md:py-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                         <div class="flex items-center justify-center bg-slate-800/50 rounded-2xl border border-slate-700 h-[180px] md:h-[220px] relative">
-                            <img src="${imgPath}" class="w-full h-full object-contain p-6 drop-shadow-2xl" alt="${w.name}" onerror="this.style.display='none'">
+                            <img src="${imgPath}" loading="lazy" class="w-full h-full object-contain p-6 drop-shadow-2xl" alt="${w.name}" onerror="this.style.display='none'">
                             <div class="absolute inset-0 flex items-center justify-center -z-10"><span class="text-slate-600 text-sm">No Image</span></div>
                         </div>
                         <div class="md:col-span-2 flex flex-col gap-4 md:gap-5">
