@@ -1,132 +1,224 @@
 // src/ui/TaskRenderer.js
-
 export class TaskRenderer {
     constructor() {
-        this.listEl = document.getElementById('task-list');
+        this.listContainer = document.getElementById('task-list');
         this.progressBar = document.getElementById('total-progress-bar');
         this.progressText = document.getElementById('progress-text');
         this.toggleBtnText = document.getElementById('text-toggle-completed');
-        this.toggleBtnIcon = document.getElementById('btn-toggle-completed');
     }
 
     render(tasks, state, mode) {
-        this.listEl.innerHTML = '';
-        let lastAccess = "";
-        let visibleCount = 0;
+        if (!this.listContainer) return;
 
-        tasks.forEach(task => {
-            visibleCount++;
+        let lastAccess = null;
 
-            // 1. 구역 헤더 (Sticky Header)
-            if (task.access && task.access !== lastAccess) {
-                this.renderHeader(task.access);
-                lastAccess = task.access;
+        this.listContainer.innerHTML = tasks.map(task => {
+            let html = '';
+
+            // 1. 헤더 로직
+            const currentAccess = task.access || '기타';
+            const isMainCompleted = state.completed[task.id];
+            
+            // 필터링
+            if (state.hideCompleted && isMainCompleted) return '';
+            if (state.hiddenTasks[task.id]) return '';
+
+            // 섹션 헤더
+            if (currentAccess !== lastAccess) {
+                html += this._createAccessHeader(currentAccess);
+                lastAccess = currentAccess;
             }
 
-            // 2. 태스크 카드
-            const isDone = !!state.completed[task.id];
-            const subTotal = task.subtasks.length;
-            const subDoneCount = task.subtasks.filter(s => state.subStatus[task.id]?.[s.id]).length;
-            const progress = subTotal > 0 ? Math.round((subDoneCount / subTotal) * 100) : (isDone ? 100 : 0);
+            // 2. 카드 렌더링 분기
+            const subCount = task.subtasks ? task.subtasks.length : 0;
 
-            const itemHtml = document.createElement('div');
-            itemHtml.className = `task-item group relative pl-2 md:pl-0 py-2 ${isDone ? 'completed' : ''}`;
-            itemHtml.dataset.id = task.id;
-
-            if (mode === 'simple') {
-                itemHtml.innerHTML = this.createSimpleCard(task, isDone, subDoneCount, subTotal, progress);
+            if (subCount <= 1) {
+                html += this._createSingleCard(task, state);
             } else {
-                itemHtml.innerHTML = this.createDetailCard(task, state.subStatus[task.id] || {}, isDone, progress);
+                html += mode === 'detail' 
+                    ? this._createExpandedCard(task, state) 
+                    : this._createCollapsedCard(task, state);
             }
-
-            this.listEl.appendChild(itemHtml);
-        });
-
-        if (visibleCount === 0) {
-            this.listEl.innerHTML = `<div class="text-center py-20 text-slate-500">🎉 모든 업무 완료! (또는 표시할 항목 없음)</div>`;
-        }
+            
+            return html;
+        }).join('');
     }
 
-    renderHeader(title) {
-        const html = `
-            <div class="section-header sticky top-[220px] md:top-[230px] z-30 py-3 bg-slate-950/95 backdrop-blur-sm -mx-2 px-2 mt-2 border-b border-white/5 select-none pointer-events-none">
-                <h3 class="text-emerald-400 text-sm font-bold flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                    ${title}
+    // --- 섹션 헤더 ---
+    _createAccessHeader(accessName) {
+        return `
+            <div class="pt-6 pb-2 px-1 select-none flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">
+                    ${accessName}
                 </h3>
             </div>
         `;
-        this.listEl.insertAdjacentHTML('beforeend', html);
     }
 
-    createSimpleCard(task, isDone, subDone, subTotal, progress) {
-        let cardClass = isDone ? "completed border-emerald-500/30 bg-emerald-900/10" : (subDone > 0 ? "border-blue-500/50 bg-slate-800" : "border-slate-700 bg-slate-900");
-        let icon = isDone ? "✅" : (subDone > 0 ? "🔥" : "⬜");
+    // --- 공통 스타일 ---
+    _getCardStyle(isCompleted) {
+        return `glass-panel rounded-xl border transition-all duration-200 overflow-hidden relative
+                ${isCompleted 
+                    ? 'bg-emerald-900/10 border-emerald-500/20 shadow-none' 
+                    : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60 shadow-lg'}`;
+    }
+
+    // --- [Case A] 단일 카드 (Single View) ---
+    _createSingleCard(task, state) {
+        const isCompleted = state.completed[task.id];
+        const cardStyle = this._getCardStyle(isCompleted);
 
         return `
-            <div class="task-card glass-panel p-4 rounded-2xl flex items-center gap-4 cursor-pointer transition-all active:scale-95 relative overflow-hidden ${cardClass}" onclick="window.app.toggleMainTask('${task.id}')">
-                <div class="absolute left-0 bottom-0 h-1 bg-blue-500/50 transition-all" style="width: ${progress}%"></div>
-                <span class="text-2xl filter drop-shadow-md shrink-0">${icon}</span>
-                <div class="min-w-0 flex-1">
-                    <h3 class="task-title text-lg font-bold text-slate-200 truncate">${task.title}</h3>
-                    <div class="text-xs text-slate-500 font-bold mt-0.5">${subDone}/${subTotal} 완료</div>
-                </div>
-                <div class="drag-handle p-2 text-slate-600 hover:text-emerald-400 cursor-grab" onclick="event.stopPropagation()">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+            <div class="task-item mb-3 select-none touch-none" data-id="${task.id}">
+                <div class="${cardStyle}">
+                    <div onclick="window.app.toggleMainTask('${task.id}')" 
+                         class="p-4 flex items-center gap-3 cursor-pointer group">
+                        
+                        <div class="drag-handle text-slate-600 hover:text-slate-400 cursor-grab active:cursor-grabbing p-1 -ml-2"
+                             onclick="event.stopPropagation()">
+                            ☰
+                        </div>
+
+                        <div class="w-6 h-6 flex items-center justify-center rounded-lg border-2 transition-all shrink-0
+                            ${isCompleted ? 'bg-emerald-600 border-emerald-600' : 'border-slate-600 group-hover:border-emerald-500 bg-slate-900'}">
+                            <span class="text-xs font-black text-white transform transition-transform ${isCompleted ? 'scale-100' : 'scale-0'}">✔</span>
+                        </div>
+
+                        <div class="flex-1 min-w-0 flex flex-col justify-center">
+                            <span class="text-base font-bold transition-colors truncate
+                                ${isCompleted ? 'text-emerald-500 line-through opacity-60' : 'text-slate-200'}">
+                                ${task.title}
+                            </span>
+                            ${task.desc ? `<span class="text-xs text-slate-500 mt-0.5 truncate">${task.desc}</span>` : ''}
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
     }
 
-    createDetailCard(task, subStatus, isDone, progress) {
-        let cardClass = isDone ? "completed border-emerald-500/30 bg-emerald-900/10" : (progress > 0 ? "border-blue-500/50 bg-slate-800" : "border-slate-700 bg-slate-900");
-        let icon = isDone ? "✅" : (progress > 0 ? "🔥" : "⬜");
+    // --- [Case B-1] 접힌 카드 (Collapsed View - 간편 모드) ---
+    _createCollapsedCard(task, state) {
+        const isCompleted = state.completed[task.id];
+        const cardStyle = this._getCardStyle(isCompleted);
+        
+        const subStatus = state.subStatus[task.id] || {};
+        const total = task.subtasks.length;
+        const done = task.subtasks.filter(s => subStatus[s.id]).length;
 
-        const subsHtml = task.subtasks.map(sub => {
+        return `
+            <div class="task-item mb-3 select-none touch-none" data-id="${task.id}">
+                <div class="${cardStyle}">
+                    <div onclick="window.app.toggleMainTask('${task.id}')" 
+                         class="p-4 flex items-center gap-3 cursor-pointer group">
+                        
+                        <div class="drag-handle text-slate-600 hover:text-slate-400 cursor-grab active:cursor-grabbing p-1 -ml-2"
+                             onclick="event.stopPropagation()">
+                            ☰
+                        </div>
+
+                        <div class="w-6 h-6 flex items-center justify-center rounded-lg border-2 transition-all shrink-0
+                            ${isCompleted ? 'bg-emerald-600 border-emerald-600' : 'border-slate-600 group-hover:border-emerald-500 bg-slate-900'}">
+                            <span class="text-xs font-black text-white transform transition-transform ${isCompleted ? 'scale-100' : 'scale-0'}">✔</span>
+                        </div>
+
+                        <div class="flex-1 min-w-0 flex flex-col justify-center">
+                            <span class="text-base font-bold transition-colors truncate
+                                ${isCompleted ? 'text-emerald-500 line-through opacity-60' : 'text-slate-200'}">
+                                ${task.title}
+                            </span>
+                            ${task.desc ? `<span class="text-xs text-slate-500 mt-0.5 truncate">${task.desc}</span>` : ''}
+
+                            <div class="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                                <div class="h-full bg-blue-500 transition-all duration-300" style="width: ${(done/total)*100}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="text-xs font-bold font-mono px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400">
+                            ${done}/${total}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // --- [Case B-2] 펼친 카드 (Expanded View - 상세 모드) ---
+    _createExpandedCard(task, state) {
+        const isCompleted = state.completed[task.id];
+        const cardStyle = this._getCardStyle(isCompleted);
+        
+        const subStatus = state.subStatus[task.id] || {};
+        const total = task.subtasks.length;
+        const done = task.subtasks.filter(s => subStatus[s.id]).length;
+
+        const subTasksHtml = task.subtasks.map(sub => {
             const isSubDone = !!subStatus[sub.id];
+            
             return `
-                <div class="flex items-center gap-3 p-2 hover:bg-slate-800/50 rounded-lg cursor-pointer" onclick="event.stopPropagation(); window.app.toggleSubTask('${task.id}', '${sub.id}')">
-                    <input type="checkbox" class="custom-checkbox flex-shrink-0" ${isSubDone ? 'checked' : ''}>
-                    <span class="text-sm font-medium ${isSubDone ? 'text-slate-500 line-through' : 'text-slate-300'}">${sub.title}</span>
+                <div onclick="window.app.toggleSubTask('${task.id}', '${sub.id}')" 
+                     class="group/sub flex items-center p-3 mb-1 last:mb-0 rounded-lg cursor-pointer transition-all duration-200
+                            ${isSubDone ? 'bg-emerald-900/10 opacity-60' : 'hover:bg-slate-700/30 active:scale-[0.98]'}">
+                    
+                    <div class="w-1 h-1 bg-slate-600 rounded-full mr-3 opacity-50"></div>
+
+                    <div class="w-5 h-5 flex items-center justify-center rounded border-2 transition-all shrink-0 mr-3
+                        ${isSubDone ? 'bg-emerald-600 border-emerald-600' : 'border-slate-600 bg-slate-900/50 group-hover/sub:border-slate-400'}">
+                         <span class="text-[10px] font-black text-white transform transition-transform ${isSubDone ? 'scale-100' : 'scale-0'}">✔</span>
+                    </div>
+
+                    <span class="text-sm font-medium transition-colors flex-1 
+                                 ${isSubDone ? 'text-slate-500 line-through' : 'text-slate-300 group-hover/sub:text-white'}">
+                        ${sub.title}
+                    </span>
                 </div>
             `;
         }).join('');
 
         return `
-            <div class="task-card glass-panel p-4 rounded-2xl relative overflow-hidden ${cardClass}">
-                <div class="flex items-center justify-between mb-3 pb-3 border-b border-white/5">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span class="text-2xl shrink-0">${icon}</span>
-                        <div class="min-w-0">
-                            <h3 class="task-title text-lg font-bold text-slate-200 truncate">${task.title}</h3>
-                            <div class="w-24 h-1.5 bg-slate-700 rounded-full mt-2 overflow-hidden">
-                                <div class="h-full bg-blue-500 transition-all" style="width: ${progress}%"></div>
-                            </div>
+            <div class="task-item mb-3 select-none touch-none" data-id="${task.id}">
+                <div class="${cardStyle}">
+                    
+                    <div class="p-4 flex items-center gap-3 bg-slate-900/30 border-b border-dashed border-slate-700/50">
+                        
+                        <div class="drag-handle text-slate-600 hover:text-slate-400 cursor-grab active:cursor-grabbing p-1 -ml-2"
+                             onclick="event.stopPropagation()">
+                            ☰
+                        </div>
+
+                        <div onclick="window.app.toggleMainTask('${task.id}')" 
+                             class="w-6 h-6 flex items-center justify-center rounded-lg border-2 transition-all shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-500/30
+                            ${isCompleted ? 'bg-emerald-600 border-emerald-600' : 'border-slate-600 hover:border-emerald-400 bg-slate-900'}">
+                            <span class="text-xs font-black text-white transform transition-transform ${isCompleted ? 'scale-100' : 'scale-0'}">✔</span>
+                        </div>
+
+                        <div class="flex-1 min-w-0 flex flex-col justify-center">
+                            <span class="text-base font-bold transition-colors truncate ${isCompleted ? 'text-emerald-500 line-through opacity-60' : 'text-slate-200'}">
+                                ${task.title}
+                            </span>
+                            ${task.desc ? `<span class="text-xs text-slate-500 mt-0.5 truncate">${task.desc}</span>` : ''}
+                        </div>
+
+                        <div class="text-xs font-bold font-mono px-2 py-1 rounded bg-slate-900/50 border border-slate-700/50 text-slate-500">
+                            ${done}/${total}
                         </div>
                     </div>
-                    <div class="drag-handle p-2 text-slate-600 hover:text-emerald-400 cursor-grab" onclick="event.stopPropagation()">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+
+                    <div class="p-2 bg-black/20 shadow-inner">
+                        ${subTasksHtml}
                     </div>
-                </div>
-                <div class="space-y-1">
-                    ${subsHtml}
                 </div>
             </div>
         `;
     }
 
     updateProgress(percentage) {
-        this.progressText.innerText = percentage;
-        this.progressBar.style.width = `${percentage}%`;
+        if (this.progressBar) this.progressBar.style.width = `${percentage}%`;
+        if (this.progressText) this.progressText.innerText = Math.round(percentage);
     }
 
     updateToggleBtn(hideCompleted) {
-        if (hideCompleted) {
-            this.toggleBtnText.innerText = "완료 보이기";
-            this.toggleBtnIcon.classList.add('bg-emerald-800', 'text-white');
-        } else {
-            this.toggleBtnText.innerText = "완료 숨기기";
-            this.toggleBtnIcon.classList.remove('bg-emerald-800', 'text-white');
-        }
+        if (this.toggleBtnText) this.toggleBtnText.innerText = hideCompleted ? '완료 보이기' : '완료 숨기기';
     }
 }

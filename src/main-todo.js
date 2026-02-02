@@ -35,14 +35,33 @@ class TodoApp {
             
             // 데이터 전처리
             this.tasks = rawTasks.map(t => {
-                let subs = t.subtasks || [];
-                if (subs.length === 0 && t.desc) {
-                    if (t.desc.includes('/')) {
-                        subs = t.desc.split('/').map((s, i) => ({ id: `${t.id}-sub-${i}`, title: s.trim() }));
-                    } else {
-                        subs = [{ id: `${t.id}-sub-0`, title: t.desc }];
-                    }
+                let subs = [];
+
+                // 1. "steps" 배열이 있는 경우 (새로운 방식)
+                if (Array.isArray(t.steps) && t.steps.length > 0) {
+                    subs = t.steps.map((stepTitle, i) => ({
+                        id: `${t.id}-sub-${i}`, // 고유 ID 생성 규칙 유지
+                        title: stepTitle
+                    }));
                 }
+                // 2. 기존 "subtasks" 필드가 이미 있는 경우 (혹시 모를 대비)
+                else if (Array.isArray(t.subtasks) && t.subtasks.length > 0) {
+                    subs = t.subtasks;
+                }
+                // 3. 기존 방식: desc에 '/'가 있는 경우 (하위 호환성)
+                else if (t.desc && t.desc.includes('/')) {
+                    subs = t.desc.split('/').map((s, i) => ({
+                        id: `${t.id}-sub-${i}`,
+                        title: s.trim()
+                    }));
+                }
+                // 4. 서브 태스크가 없고 desc만 있는 경우 -> 서브 태스크 1개로 취급할지 여부는 선택
+                // (여기서는 desc는 설명으로만 쓰고, steps가 없으면 서브태스크 없는 것으로 처리)
+                // 만약 desc를 서브태스크 1개로 만들고 싶다면 아래 주석 해제
+                else if (t.desc) {
+                    subs = [{ id: `${t.id}-sub-0`, title: t.desc }];
+                }
+
                 return { ...t, subtasks: subs };
             });
 
