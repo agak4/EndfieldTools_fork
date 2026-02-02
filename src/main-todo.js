@@ -95,22 +95,23 @@ class TodoApp {
         this.initSortable();
     }
 
-    // [복구됨] 드래그 앤 드롭 초기화
+    // 드래그 앤 드롭 초기화
     initSortable() {
         const el = document.getElementById('task-list');
-        if (this.sortable) this.sortable.destroy(); // 기존 인스턴스 정리
+        if (this.sortable) this.sortable.destroy();
 
         this.sortable = new Sortable(el, {
             group: 'tasks',
-            handle: '.drag-handle',
+            handle: '.drag-handle', // 핸들 지정 필수
             animation: 200,
             ghostClass: 'sortable-ghost',
-            forceFallback: true,
+            forceFallback: true, // 스타일 유지를 위해 켜둠 (touch-pan-y와 함께 사용시 문제 없음)
+            touchStartThreshold: 5, // [추가] 5px 이상 움직여야 드래그로 인식 (스크롤 오작동 방지)
             fallbackClass: 'sortable-fallback',
             onStart: () => document.getElementById('trash-zone').classList.add('active'),
             onEnd: () => {
                 document.getElementById('trash-zone').classList.remove('active');
-                this.saveOrder(); // 순서 저장
+                this.saveOrder();
             }
         });
     }
