@@ -1,8 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;900&display=swap');
 
-body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-.no-select { user-select: none; -webkit-user-select: none; }
+/* --- 기본 설정 --- */
+body { 
+    font-family: 'Pretendard', sans-serif; 
+    -webkit-tap-highlight-color: transparent; 
+}
+.no-select { 
+    user-select: none; 
+    -webkit-user-select: none; 
+}
 
+/* --- UI 컴포넌트 --- */
 .glass-panel { 
     background: rgba(30, 41, 59, 0.7); 
     backdrop-filter: blur(12px); 
@@ -10,14 +18,14 @@ body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: trans
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); 
 }
 
-/* [신규] 하단 요약 바 (Summary Bar) */
+/* 하단 요약 바 (Summary Bar) */
 #farming-summary-bar {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(100%); /* 기본적으로 숨김 */
 }
 #farming-summary-bar.show { transform: translateY(0); }
 
-/* [신규] 전략 패널 (Strategy Drawer) */
+/* 전략 패널 (Strategy Drawer) */
 #farming-strategy-drawer {
     transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
     transform: translateY(110%); /* 아래로 숨김 */
@@ -25,7 +33,7 @@ body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: trans
 }
 #farming-strategy-drawer.open { transform: translateY(0); }
 
-/* 우선순위 강조 효과 */
+/* --- 우선순위 및 배지 --- */
 .priority-target {
     border-color: #f59e0b !important;
     box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
@@ -48,5 +56,40 @@ body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: trans
 .match-mid { background: #f59e0b; color: white; }
 .match-bad { background: #64748b; color: #cbd5e1; }
 
+/* 아코디언 애니메이션 */
 .details-content { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s; }
 .details-open .details-content { max-height: 1000px; opacity: 1; margin-top: 1rem; }
+
+
+/* --- 스크롤바 디자인 (전역 설정) --- */
+/* 하나로 통합하여 모든 곳에서 동일한 다크 테마 스크롤바 적용 */
+
+/* 스크롤바 전체 영역 */
+::-webkit-scrollbar {
+    width: 8px;  /* 세로 스크롤바 너비 */
+    height: 8px; /* 가로 스크롤바 높이 */
+}
+
+/* 스크롤바 트랙 (배경) */
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5); /* Slate-900 (반투명) */
+}
+
+/* 스크롤바 막대 (Thumb) */
+::-webkit-scrollbar-thumb {
+    background: #334155; /* Slate-700 */
+    border-radius: 4px;   /* 둥근 모서리 */
+    border: 2px solid rgba(15, 23, 42, 0.5); /* 배경과의 간격 효과 */
+}
+
+/* 스크롤바 막대 호버 시 */
+::-webkit-scrollbar-thumb:hover {
+    background: #475569; /* Slate-600 (좀 더 밝게) */
+}
+
+/* 모바일/태블릿 등 터치 디바이스에서는 스크롤바 숨김 */
+@media (max-width: 768px) {
+    ::-webkit-scrollbar {
+        display: none;
+    }
+}

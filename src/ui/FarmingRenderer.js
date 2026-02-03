@@ -130,5 +130,14 @@ export class FarmingRenderer {
 
         container.innerHTML = html;
         container.className = "flex flex-nowrap gap-3 overflow-x-auto pb-8 mt-4 pt-4 border-t border-white/5 scrollbar-hide px-1";
+        
+        // PC 마우스 휠 가로 스크롤
+        // 기존 리스너 중복 방지를 위해 onwheel 프로퍼티에 할당
+        container.onwheel = (evt) => {
+            if (evt.deltaY !== 0) {
+                evt.preventDefault(); // 배경 스크롤 방지
+                container.scrollLeft += evt.deltaY; // 세로 휠 움직임을 가로 스크롤로 변환
+            }
+        };
     }
 }
