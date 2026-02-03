@@ -30,15 +30,10 @@ export class FarmingRenderer {
             icon = '<div class="absolute top-1 right-1 bg-emerald-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md z-10 font-bold">✓</div>';
         }
 
+        // [수정] 롱프레스 이벤트 제거 & handleManagerClick으로 변경
         return `
             <button 
-                onmousedown="window.app.handlePressStart('${w.name}')" 
-                ontouchstart="window.app.handlePressStart('${w.name}')" 
-                onmouseup="window.app.handlePressEnd()" 
-                ontouchend="window.app.handlePressEnd()" 
-                onmouseleave="window.app.handlePressEnd()"
-                onclick="event.stopPropagation(); window.app.handleClick('${w.name}')"
-                oncontextmenu="return false;"
+                onclick="event.stopPropagation(); window.app.handleManagerClick('${w.name}')"
                 class="no-select group relative aspect-square rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center p-2 gap-1 active:scale-95 ${cardClass}">
                 ${icon}
                 <img src="${imgPath}" loading="lazy" class="w-full h-3/5 object-contain mb-1" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTQxYjgyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xNC41IDEwTDQgMjBNOi41IDEwTDIwIDRNMiAyMmwyMC0yIi8+PC9zdmc+'">
@@ -47,8 +42,8 @@ export class FarmingRenderer {
         `;
     }
 
+    // ... (나머지 메서드들은 변경 없음) ...
     static renderDrawer(plan, currentIndex, totalPlans, priorityWeapon) {
-        // ... (이전 코드와 동일, 생략)
         if (!plan) {
             document.getElementById('farm-loc-title').innerText = "장소 정보 없음";
             document.getElementById('farm-loc-desc').innerText = "-";
@@ -57,8 +52,21 @@ export class FarmingRenderer {
 
         document.getElementById('loc-nav-indicator').innerText = `${currentIndex + 1} / ${totalPlans}`;
         document.getElementById('farm-loc-title').innerHTML = plan.locationName;
-        document.getElementById('farm-loc-desc').innerHTML = 
-            `<span class="text-emerald-400 font-bold">${plan.count}개</span> 획득 가능 <span class="text-slate-500 text-xs">(${plan.efficiency}% 효율)</span>`;
+        
+        let descHtml = "";
+        
+        if (plan.targetCount > 0) {
+            descHtml += `<span class="text-orange-400 font-bold mr-1">🎯 타겟 ${plan.targetCount}</span>`;
+            descHtml += `<span class="text-slate-500 text-xs mr-3">(${plan.targetEfficiency}%)</span>`;
+        }
+        
+        if (plan.normalCount > 0) {
+            descHtml += `<span class="text-slate-400 font-bold text-sm">📦 일반 ${plan.normalCount}</span>`;
+        }
+        
+        if (plan.count === 0) descHtml = `<span class="text-slate-500">획득 가능 아이템 없음</span>`;
+
+        document.getElementById('farm-loc-desc').innerHTML = descHtml;
 
         const getTagStyle = (tag) => {
             if (APP_CONFIG.CATEGORIES.STATS.includes(tag)) return "bg-blue-600 text-white border-blue-500 shadow-md";
@@ -84,6 +92,7 @@ export class FarmingRenderer {
         const sortedItems = [...plan.items].sort((a, b) => {
             if (a.name === priorityWeapon) return -1;
             if (b.name === priorityWeapon) return 1;
+            if ((a.weight || 0) !== (b.weight || 0)) return (b.weight || 0) - (a.weight || 0);
             return a.name.localeCompare(b.name);
         });
 
@@ -92,13 +101,22 @@ export class FarmingRenderer {
             const imgPath = fileName ? `assets/images/weapons/${w.rarity} star/${fileName}` : '';
 
             const isPriority = priorityWeapon === w.name;
-            const borderClass = isPriority ? "priority-target border-2 border-amber-500" : "border-slate-600";
+            const isTarget = w.isTarget;
+
+            const visualClass = (isPriority || isTarget) 
+                ? "opacity-100" 
+                : "grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all";
+
+            const borderClass = isPriority 
+                ? "priority-target border-2 border-amber-500 shadow-amber-500/20" 
+                : (isTarget ? "border-slate-500 shadow-md" : "border-slate-700/50");
+
             const crown = isPriority ? '<div class="priority-crown">👑</div>' : '';
             
             return `
                 <div class="relative flex-shrink-0 cursor-pointer transition-transform active:scale-95 flex flex-col items-center gap-1" onclick="window.app.setPriority('${w.name}')">
                     ${crown}
-                    <div class="w-28 h-36 rounded-xl bg-slate-800 border ${borderClass} relative overflow-hidden flex flex-col shadow-lg">
+                    <div class="w-28 h-36 rounded-xl bg-slate-800 border ${borderClass} relative overflow-hidden flex flex-col shadow-lg ${visualClass}">
                         <div class="flex-1 flex items-center justify-center p-2 bg-slate-900/50">
                             <img src="${imgPath}" loading="lazy" class="w-full h-full object-contain">
                         </div>

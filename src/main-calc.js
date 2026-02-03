@@ -14,15 +14,12 @@ class CalcApp {
         this.searchQuery = "";
         this.targetRarity = 6;
         
-        // 기질 보유 현황 로드 (0:미보유, 1:타겟, 2:졸업)
         this.statusMap = StorageUtils.load(APP_CONFIG.STORAGE_KEYS.WEAPON_STATUS, {});
         
-        // 파밍 전략 Drawer 관련 상태
         this.currentPlanIndex = 0;
         this.farmingPlans = [];
         this.priorityWeapon = null;
 
-        // Long Press Variables
         this.pressTimer = null;
         this.isLongPress = false;
 
@@ -44,7 +41,6 @@ class CalcApp {
             series: document.getElementById('tags-series') 
         };
         
-        // 기존 태그 비우기
         Object.values(containers).forEach(el => { if(el) el.innerHTML = ''; });
 
         const allTags = [...new Set(this.weapons.flatMap(w => w.tags || []))].sort();
@@ -70,19 +66,13 @@ class CalcApp {
     }
 
     updateUI() {
-        // 필터링 (FarmingLogic 사용)
-        // 주의: FarmingLogic.filterWeapons는 검색/태그 필터만 담당. 
-        // 메인 화면 로직(갈갈 판단)을 위해 별도 필터링 수행
-        
         const listEl = document.getElementById('weapon-list');
         const countEl = document.getElementById('result-count');
         
-        // 1. 논리 필터 (갈갈 판단용)
         const decisionList = this.weapons.filter(w => 
             this.activeTags.size === 0 || Array.from(this.activeTags).every(t => w.tags.includes(t))
         ).sort((a, b) => b.rarity - a.rarity);
 
-        // 2. 표시 필터 (검색어 적용)
         const displayList = decisionList.filter(w => 
             this.searchQuery === "" || w.name.includes(this.searchQuery)
         );
@@ -104,7 +94,6 @@ class CalcApp {
         const box = document.getElementById('decision-box');
         if (!box) return;
 
-        // 초기 상태
         if (this.activeTags.size === 0 && this.searchQuery === "") {
             this.renderBoxContent(box, '이거 갈아도 됨?', '필터에서 옵션을 선택해주세요', 'bg-slate-800/90 border-dashed border-slate-600');
             return;
@@ -115,7 +104,6 @@ class CalcApp {
             return;
         }
 
-        // 보유 중인 무기 제외하고 판단 (졸업=2)
         const candidates = filteredWeapons.filter(w => (this.statusMap[w.name] || 0) !== 2);
         
         if (candidates.length === 0) {
@@ -125,7 +113,6 @@ class CalcApp {
 
         const validCandidates = candidates.filter(w => w.rarity >= this.targetRarity);
 
-        // 3개 선택 (확정)
         if (this.activeTags.size === 3) {
             if (validCandidates.length > 0) {
                 const bgClass = this.targetRarity === 6 ? 'bg-red-600 animate-pulse border-red-400' : 'bg-yellow-600 border-yellow-400';
@@ -136,7 +123,6 @@ class CalcApp {
             return;
         }
 
-        // 1~2개 선택 (탐색)
         if (validCandidates.length > 0) {
             this.renderBoxContent(box, '옵션 더 선택', '아직 판단 못함', 'bg-blue-600');
         } else {
@@ -172,7 +158,6 @@ class CalcApp {
 
     setTargetRarity(rarity) {
         this.targetRarity = rarity;
-        // 버튼 스타일 업데이트
         const btn5 = document.getElementById('btn-rarity-5');
         const btn6 = document.getElementById('btn-rarity-6');
         if (rarity === 5) {
@@ -189,7 +174,7 @@ class CalcApp {
         document.getElementById(`weapon-${index}`).classList.toggle('details-open');
     }
 
-    // --- Interaction (Click/Hold) ---
+    // --- Interaction (Main List) ---
 
     handlePressStart(name) {
         this.isLongPress = false;
@@ -209,15 +194,39 @@ class CalcApp {
         this.changeStatus(name, 'click');
     }
 
+    // [추가] 관리창(Modal) 전용 클릭 핸들러 (순환 방식)
+    handleManagerClick(name) {
+        const current = this.statusMap[name] || 0;
+        let next = (current + 1) % 3; // 0->1->2->0 순환
+
+        if (next === 0) {
+            delete this.statusMap[name];
+            if (this.priorityWeapon === name) this.priorityWeapon = null;
+        } else {
+            this.statusMap[name] = next;
+        }
+
+        StorageUtils.save(APP_CONFIG.STORAGE_KEYS.WEAPON_STATUS, this.statusMap);
+        this.updateUI();
+        
+        // 모달 리스트 즉시 갱신
+        const searchVal = document.getElementById('manager-search').value;
+        FarmingRenderer.renderModalList(
+            this.weapons.filter(w => w.name.includes(searchVal)), 
+            this.statusMap
+        );
+        this.updateFarmingPlan();
+    }
+
     changeStatus(name, type) {
         const current = this.statusMap[name] || 0;
         let next = 0;
 
         if (type === 'click') {
-            if (current === 0) next = 1; // 타겟
-            else next = 0; // 해제
+            if (current === 0) next = 1; 
+            else next = 0; 
         } else {
-            next = 2; // 졸업
+            next = 2; 
         }
 
         if (next === 0) {
@@ -228,10 +237,9 @@ class CalcApp {
         }
 
         StorageUtils.save(APP_CONFIG.STORAGE_KEYS.WEAPON_STATUS, this.statusMap);
-        
-        // UI 갱신 (메인 & 모달)
         this.updateUI();
         
+        // 메인 리스트에서도 모달 갱신 호출 (양방향 동기화)
         const modal = document.getElementById('manager-modal-backdrop');
         if (modal && !modal.classList.contains('hidden')) {
             const searchVal = document.getElementById('manager-search').value;
@@ -249,7 +257,7 @@ class CalcApp {
         this.priorityWeapon = null;
         StorageUtils.save(APP_CONFIG.STORAGE_KEYS.WEAPON_STATUS, {});
         this.updateUI();
-        this.openManagerModal(); // 모달 리프레시
+        this.openManagerModal(); 
     }
 
     // --- Modal & Farming Strategy ---
@@ -293,14 +301,21 @@ class CalcApp {
     }
 
     updateFarmingPlan() {
-        // 1. 타겟 무기 추출
-        const targets = this.weapons.filter(w => this.statusMap[w.name] === 1);
-        document.getElementById('summary-count').innerText = targets.length;
+        const candidates = this.weapons.filter(w => {
+            const status = this.statusMap[w.name] || 0;
+            return status !== 2 && (status === 1 || w.rarity === 6);
+        }).map(w => ({
+            ...w,
+            weight: (this.statusMap[w.name] === 1) ? 5 : 1,
+            isTarget: (this.statusMap[w.name] === 1)
+        }));
+
+        document.getElementById('summary-count').innerText = candidates.filter(w => w.isTarget).length;
 
         const summaryBar = document.getElementById('farming-summary-bar');
         const drawer = document.getElementById('farming-strategy-drawer');
 
-        if (targets.length === 0) {
+        if (candidates.length === 0) {
             summaryBar.classList.remove('show');
             drawer.classList.remove('open');
             this.farmingPlans = [];
@@ -309,10 +324,7 @@ class CalcApp {
         
         summaryBar.classList.add('show');
 
-        // 2. 파밍 로직 계산 (Domain Logic 호출)
-        this.farmingPlans = FarmingLogic.calculatePlan(targets, this.priorityWeapon);
-        
-        // 3. 렌더링
+        this.farmingPlans = FarmingLogic.calculatePlan(candidates, this.priorityWeapon);
         this.currentPlanIndex = 0;
         this.renderDrawerContent();
     }
@@ -341,9 +353,8 @@ class CalcApp {
     setPriority(name) {
         if (this.priorityWeapon === name) this.priorityWeapon = null;
         else this.priorityWeapon = name;
-        this.updateFarmingPlan(); // 재계산
+        this.updateFarmingPlan(); 
     }
 }
 
-// 전역 인스턴스 생성
 window.app = new CalcApp();
