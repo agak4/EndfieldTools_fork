@@ -23,6 +23,7 @@ export class WeaponRenderer {
         }
 
         const effectsText = w.effects ? w.effects.trim() : '';
+        const locationText = w.location || '정보 없음';
 
         return `
             <div id="weapon-${index}" class="group relative transition-all duration-200 ${cardStyle} border overflow-hidden">
@@ -48,20 +49,43 @@ export class WeaponRenderer {
                     ${label}
                     <span class="arrow-icon text-slate-500 text-xs md:text-sm transition-transform duration-300">▼</span>
                 </div>
-                
-                <div class="details-content bg-slate-900/50 px-4 md:px-6 border-t border-white/5 ml-[4px] md:ml-[6px]">
-                    <div class="py-6 md:py-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                        <div class="flex items-center justify-center bg-slate-800/50 rounded-2xl border border-slate-700 h-[180px] md:h-[220px] relative">
-                            <img src="${imgPath}" loading="lazy" class="w-full h-full object-contain p-6 drop-shadow-2xl" alt="${w.name}" onerror="this.style.display='none'">
-                            <div class="absolute inset-0 flex items-center justify-center -z-10"><span class="text-slate-600 text-sm">No Image</span></div>
+
+                <div class="details-content bg-slate-900/50 border-t border-white/5 ml-[4px] md:ml-[6px]">
+                    <div class="p-4 md:p-5 grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4 md:gap-0">
+                        
+                        <div class="flex items-center justify-center bg-slate-950/50 rounded-2xl md:rounded-r-none border border-slate-700/50 relative overflow-hidden p-2 min-h-[160px] md:min-h-full">
+                            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800/50 to-transparent opacity-50"></div>
+                            <img src="${imgPath}" loading="lazy" class="w-full h-full object-contain drop-shadow-2xl relative z-10 scale-110" alt="${w.name}" onerror="this.style.display='none'">
+                            <div class="absolute inset-0 flex items-center justify-center -z-10"><span class="text-slate-700 text-sm font-bold">No Image</span></div>
                         </div>
-                        <div class="md:col-span-2 flex flex-col gap-4 md:gap-5">
-                            <div class="grid grid-cols-2 gap-4 md:gap-5">
-                                <div class="bg-slate-800/30 p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-700/50"><span class="text-xs md:text-sm text-slate-500 block mb-1 font-bold">Main</span><span class="text-xl md:text-3xl font-black text-blue-300 tracking-tight">${w.main_stat}</span></div>
-                                <div class="bg-slate-800/30 p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-700/50"><span class="text-xs md:text-sm text-slate-500 block mb-1 font-bold">Sub</span><span class="text-xl md:text-3xl font-black text-emerald-300 tracking-tight">${w.sub_stat}</span></div>
+
+                        <div class="flex flex-col bg-slate-800/30 border border-slate-700/50 rounded-2xl md:rounded-l-none md:border-l-0 overflow-hidden">
+                            
+                            <div class="grid grid-cols-2 divide-x divide-slate-700/50 bg-slate-800/50 border-b border-slate-700/50">
+                                <div class="p-3 flex flex-col items-center justify-center gap-0.5">
+                                    <span class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Main Stat</span>
+                                    <span class="text-sm font-black text-white leading-none">${w.main_stat}</span>
+                                </div>
+                                <div class="p-3 flex flex-col items-center justify-center gap-0.5">
+                                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Sub Stat</span>
+                                    <span class="text-sm font-black text-white leading-none">${w.sub_stat}</span>
+                                </div>
                             </div>
-                            <div class="flex-1 bg-slate-800/50 p-4 md:p-5 rounded-xl md:rounded-2xl border border-slate-700 text-sm md:text-lg text-slate-100 leading-relaxed whitespace-pre-line font-medium">${effectsText}</div>
-                            <div class="text-xs text-slate-500 mt-2 font-bold">📍 획득처: ${w.location || '정보 없음'}</div>
+
+                            <div class="flex-1 p-4 flex flex-col justify-center gap-2">
+                                <span class="text-[10px] text-slate-500 font-bold block tracking-wider">WEAPON EFFECT</span>
+                                <p class="text-xs md:text-sm text-slate-200 leading-relaxed whitespace-pre-line font-medium">
+                                    ${effectsText || '<span class="text-slate-500 italic">효과 정보가 없습니다.</span>'}
+                                </p>
+                            </div>
+
+                            <div class="bg-slate-950/30 border-t border-slate-700/30 px-3 py-2 flex items-center gap-2">
+                                <span class="text-[10px] font-bold text-amber-500 shrink-0">기질 나오는 곳</span>
+                                <span class="text-[11px] text-slate-400 font-medium truncate leading-none pt-0.5">
+                                    ${locationText}
+                                </span>
+                            </div>
+
                         </div>
                     </div>
                 </div>

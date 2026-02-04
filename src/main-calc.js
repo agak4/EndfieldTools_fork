@@ -174,6 +174,27 @@ class CalcApp {
         document.getElementById(`weapon-${index}`).classList.toggle('details-open');
     }
 
+    // [추가됨] 기질 필터 접기/펴기 기능
+    toggleFilter() {
+        const content = document.getElementById('filter-content');
+        const arrow = document.getElementById('filter-arrow');
+        
+        // 현재 펼쳐져 있는지 확인 (max-h-0 클래스가 없으면 펼쳐진 상태)
+        const isOpen = !content.classList.contains('max-h-0');
+
+        if (isOpen) {
+            // 접기
+            content.classList.remove('max-h-[1000px]', 'opacity-100', 'mt-4', 'md:mt-6');
+            content.classList.add('max-h-0', 'opacity-0', 'mt-0');
+            arrow.style.transform = 'rotate(-90deg)'; // 화살표 회전
+        } else {
+            // 펼치기
+            content.classList.remove('max-h-0', 'opacity-0', 'mt-0');
+            content.classList.add('max-h-[1000px]', 'opacity-100', 'mt-4', 'md:mt-6');
+            arrow.style.transform = 'rotate(0deg)'; // 화살표 원복
+        }
+    }
+    
     // --- Interaction (Main List) ---
 
     //홀드로 보유처리
