@@ -1,16 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;900&display=swap');
 
-/* --- 기본 설정 --- */
+/* =========================================
+   1. 기본 설정 (Base & Typography)
+   ========================================= */
 body { 
     font-family: 'Pretendard', sans-serif; 
     -webkit-tap-highlight-color: transparent; 
 }
+
 .no-select { 
     user-select: none; 
     -webkit-user-select: none; 
 }
 
-/* --- UI 컴포넌트 --- */
+/* =========================================
+   2. UI 컴포넌트 (Common Components)
+   ========================================= */
 .glass-panel { 
     background: rgba(30, 41, 59, 0.7); 
     backdrop-filter: blur(12px); 
@@ -18,22 +23,63 @@ body {
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); 
 }
 
-/* 하단 요약 바 (Summary Bar) */
+/* 상단 고정 패널 (Sticky Panel) */
+.sticky-panel { 
+    background: rgba(15, 23, 42, 0.95); 
+    backdrop-filter: blur(16px); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.5); 
+    transition: all 0.3s ease; 
+}
+
+/* 아코디언 애니메이션 */
+.details-content { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s; }
+.details-open .details-content { max-height: 1000px; opacity: 1; margin-top: 1rem; }
+
+/* =========================================
+   3. 스크롤바 디자인 (Scrollbar)
+   ========================================= */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+    border: 2px solid rgba(15, 23, 42, 0.5);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+@media (max-width: 768px) {
+    ::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* =========================================
+   4. 기질 계산기 전용 (Calculator)
+   ========================================= */
+/* 하단 요약 바 */
 #farming-summary-bar {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateY(100%); /* 기본적으로 숨김 */
+    transform: translateY(100%);
 }
 #farming-summary-bar.show { transform: translateY(0); }
 
-/* 전략 패널 (Strategy Drawer) */
+/* 전략 패널 (Drawer) */
 #farming-strategy-drawer {
     transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-    transform: translateY(110%); /* 아래로 숨김 */
+    transform: translateY(110%);
     z-index: 50;
 }
 #farming-strategy-drawer.open { transform: translateY(0); }
 
-/* --- 우선순위 및 배지 --- */
+/* 우선순위 및 배지 */
 .priority-target {
     border-color: #f59e0b !important;
     box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
@@ -45,7 +91,6 @@ body {
     font-size: 16px; z-index: 20; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
 }
 
-/* 적중률 배지 */
 .match-badge {
     position: absolute; bottom: -6px; right: -6px;
     font-size: 10px; font-weight: 900; padding: 2px 6px;
@@ -56,40 +101,47 @@ body {
 .match-mid { background: #f59e0b; color: white; }
 .match-bad { background: #64748b; color: #cbd5e1; }
 
-/* 아코디언 애니메이션 */
-.details-content { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s; }
-.details-open .details-content { max-height: 1000px; opacity: 1; margin-top: 1rem; }
+/* =========================================
+   5. 숙제 관리 전용 (To-Do)
+   ========================================= */
 
-
-/* --- 스크롤바 디자인 (전역 설정) --- */
-/* 하나로 통합하여 모든 곳에서 동일한 다크 테마 스크롤바 적용 */
-
-/* 스크롤바 전체 영역 */
-::-webkit-scrollbar {
-    width: 8px;  /* 세로 스크롤바 너비 */
-    height: 8px; /* 가로 스크롤바 높이 */
+/* [핵심 수정] 삭제 영역 (Trash Zone) - 오른쪽 배치 */
+#trash-zone {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* 평소에는 오른쪽 화면 밖(100%)에 숨겨둠 */
+    transform: translateX(100%); 
+    opacity: 0;
+    pointer-events: none;
+    
+    /* 배경: 왼쪽(투명) -> 오른쪽(진한 빨강) */
+    background: linear-gradient(to right, transparent 0%, rgba(220, 38, 38, 0.1) 20%, rgba(220, 38, 38, 0.9) 100%);
 }
 
-/* 스크롤바 트랙 (배경) */
-::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.5); /* Slate-900 (반투명) */
+#trash-zone.active {
+    /* 활성화 시 제자리(0)로 스르륵 이동 */
+    transform: translateX(0); 
+    opacity: 1;
+    pointer-events: auto;
 }
 
-/* 스크롤바 막대 (Thumb) */
-::-webkit-scrollbar-thumb {
-    background: #334155; /* Slate-700 */
-    border-radius: 4px;   /* 둥근 모서리 */
-    border: 2px solid rgba(15, 23, 42, 0.5); /* 배경과의 간격 효과 */
-}
+/* 드래그 앤 드롭 관련 */
+.drag-handle { cursor: grab; touch-action: none; }
+.drag-handle:active { cursor: grabbing; color: #34d399; }
 
-/* 스크롤바 막대 호버 시 */
-::-webkit-scrollbar-thumb:hover {
-    background: #475569; /* Slate-600 (좀 더 밝게) */
-}
+.sortable-ghost { opacity: 0.3; background: #334155; border-radius: 1rem; }
+.sortable-fallback { opacity: 1 !important; transform: scale(1.02); z-index: 9999; pointer-events: none; }
 
-/* 모바일/태블릿 등 터치 디바이스에서는 스크롤바 숨김 */
-@media (max-width: 768px) {
-    ::-webkit-scrollbar {
-        display: none;
-    }
-}
+/* 모드 스위치 및 프로그레스 바 */
+.mode-switch { position: relative; width: 120px; height: 32px; background: #1e293b; border-radius: 99px; padding: 3px; cursor: pointer; border: 1px solid #334155; display: flex; align-items: center; }
+.mode-switch-thumb { position: absolute; left: 3px; top: 3px; width: 56px; height: 24px; background: #3b82f6; border-radius: 99px; transition: all 0.3s; z-index: 1; }
+.mode-detail .mode-switch-thumb { transform: translateX(56px); background: #8b5cf6; }
+.mode-label { width: 50%; text-align: center; font-size: 11px; font-weight: 800; z-index: 2; color: #94a3b8; transition: color 0.3s; }
+.mode-label.active { color: white; }
+.progress-bar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* 체크박스 & 완료 스타일 */
+.custom-checkbox { appearance: none; width: 1.1rem; height: 1.1rem; border: 2px solid #475569; border-radius: 0.25rem; background-color: #0f172a; cursor: pointer; position: relative; }
+.custom-checkbox:checked { background-color: #8b5cf6; border-color: #8b5cf6; }
+.custom-checkbox:checked::after { content: '✔'; position: absolute; color: white; font-size: 0.6rem; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.task-item.completed .task-card { background: rgba(6, 78, 59, 0.15); border-color: rgba(16, 185, 129, 0.3); }
+.task-item.completed .task-title { color: #34d399; text-decoration: line-through; opacity: 0.7; }

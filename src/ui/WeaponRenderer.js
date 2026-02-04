@@ -29,17 +29,13 @@ export class WeaponRenderer {
                 <div class="absolute left-0 top-0 bottom-0 w-[4px] md:w-[6px] ${styles.bar} z-10"></div>
                 
                 <div onclick="window.app.toggleAccordion(${index})" class="flex items-center gap-3 md:gap-5 px-3 py-3 md:px-6 md:py-5 cursor-pointer pl-6 md:pl-8 relative z-20"> 
+                    
                     <div class="no-select w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-slate-900 border border-slate-700 relative overflow-hidden shrink-0" 
-                         onmousedown="window.app.handlePressStart('${w.name}')" 
-                         ontouchstart="window.app.handlePressStart('${w.name}')" 
-                         onmouseup="window.app.handlePressEnd()" 
-                         ontouchend="window.app.handlePressEnd()" 
-                         onmouseleave="window.app.handlePressEnd()"
-                         onclick="event.stopPropagation(); window.app.handleClick('${w.name}')"
-                         oncontextmenu="return false;">
+                         onclick="event.stopPropagation(); window.app.handleClick('${w.name}')">
                         ${checkIcon}
                         <img src="${imgPath}" loading="lazy" class="w-full h-full object-contain p-1 md:p-1.5" onerror="this.style.display='none'">
                     </div>
+
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
                             <span class="text-base md:text-xl font-black text-white truncate">${w.name}</span>

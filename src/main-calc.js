@@ -176,22 +176,45 @@ class CalcApp {
 
     // --- Interaction (Main List) ---
 
-    handlePressStart(name) {
-        this.isLongPress = false;
-        this.pressTimer = setTimeout(() => {
-            this.isLongPress = true;
-            this.changeStatus(name, 'hold');
-            if (navigator.vibrate) navigator.vibrate(50);
-        }, 600);
-    }
+    //홀드로 보유처리
+    // handlePressStart(name) {
+    //     this.isLongPress = false;
+    //     this.pressTimer = setTimeout(() => {
+    //         this.isLongPress = true;
+    //         this.changeStatus(name, 'hold');
+    //         if (navigator.vibrate) navigator.vibrate(50);
+    //     }, 600);
+    // }
 
-    handlePressEnd() {
-        if (this.pressTimer) clearTimeout(this.pressTimer);
-    }
+    // handlePressEnd() {
+    //     if (this.pressTimer) clearTimeout(this.pressTimer);
+    // }
 
+    // [수정] 메인 리스트 클릭 핸들러 (순환 방식 적용)
     handleClick(name) {
-        if (this.isLongPress) return;
-        this.changeStatus(name, 'click');
+        const current = this.statusMap[name] || 0;
+        let next = (current + 1) % 3; // 0->1->2->0 순환
+
+        if (next === 0) {
+            delete this.statusMap[name];
+            if (this.priorityWeapon === name) this.priorityWeapon = null;
+        } else {
+            this.statusMap[name] = next;
+        }
+
+        StorageUtils.save(APP_CONFIG.STORAGE_KEYS.WEAPON_STATUS, this.statusMap);
+        this.updateUI();
+        
+        // 관리창(Modal)이 열려있다면 함께 갱신 (동기화)
+        const modal = document.getElementById('manager-modal-backdrop');
+        if (modal && !modal.classList.contains('hidden')) {
+            const searchVal = document.getElementById('manager-search').value;
+            FarmingRenderer.renderModalList(
+                this.weapons.filter(w => w.name.includes(searchVal)), 
+                this.statusMap
+            );
+            this.updateFarmingPlan();
+        }
     }
 
     // [추가] 관리창(Modal) 전용 클릭 핸들러 (순환 방식)

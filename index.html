@@ -67,11 +67,14 @@
                     <h2 class="text-base md:text-lg font-bold text-slate-300 whitespace-nowrap">
                         검색 결과 <span id="result-count" class="text-white text-lg md:text-xl ml-1 md:ml-2 font-black">0</span>
                     </h2>
-                    <div class="relative group hidden"> 
-                        <input type="text" id="search-input" oninput="window.app.handleSearch(this.value)"> 
+                    
+                    <div class="relative group"> 
+                        <input type="text" id="search-input" placeholder="이름 검색..." 
+                            class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none transition-colors w-32 md:w-48 placeholder-slate-600"
+                            oninput="window.app.handleSearch(this.value)"> 
                     </div>
                 </div>
-                <span class="text-xs md:text-sm text-slate-500 font-medium ml-auto">* 클릭: 타겟 / 꾹: 졸업</span>
+                <span class="text-xs md:text-sm text-slate-500 font-medium ml-auto">* 클릭: 타겟 / 반복: 상태변경</span>
             </div>
             <div id="weapon-list" class="glass-panel rounded-xl md:rounded-2xl divide-y divide-slate-700/50"></div>
         </section>
